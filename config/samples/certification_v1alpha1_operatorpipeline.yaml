@@ -1,0 +1,7 @@
+apiVersion: certification.redhat.com/v1alpha1
+kind: OperatorPipeline
+metadata:
+  name: operatorpipeline-sample
+spec:
+  openShiftPipelineVersion: v1.5.0
+  operatorPipelinesRelease: main
