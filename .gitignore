@@ -14,3 +14,13 @@ bin/
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# editor and IDE paraphernalia
+.idea
+*.swp
+*.swo
+*~
+.vscode
+
+# MacOS related artifacts
+.DS_Store
