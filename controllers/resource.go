@@ -39,29 +39,34 @@ func IsObjectFound(client client.Client, key types.NamespacedName, obj client.Ob
 
 // reconcileResources will ensure that all required resources are present and up to date.
 func (r *OperatorPipelineReconciler) reconcileResources(meta metav1.ObjectMeta) error {
-	if err := r.reconcilePipelineOperator(meta); err != nil {
+
+	if err := r.reconcilePipelineDependencies(); err != nil {
 		return err
 	}
 
-	if err := r.reconcileKubeConfigSecret(meta); err != nil {
-		return err
-	}
+	// if err := r.reconcilePipelineOperator(meta); err != nil {
+	// 	return err
+	// }
 
-	if err := r.reconcileGitHubAPISecret(meta); err != nil {
-		return err
-	}
+	// if err := r.reconcileKubeConfigSecret(meta); err != nil {
+	// 	return err
+	// }
 
-	if err := r.reconcilePyxisAPISecret(meta); err != nil {
-		return err
-	}
+	// if err := r.reconcileGitHubAPISecret(meta); err != nil {
+	// 	return err
+	// }
 
-	if err := r.reconcileCertifiedImageStream(meta); err != nil {
-		return err
-	}
+	// if err := r.reconcilePyxisAPISecret(meta); err != nil {
+	// 	return err
+	// }
 
-	if err := r.reconcileMarketplaceImageStream(meta); err != nil {
-		return err
-	}
+	// if err := r.reconcileCertifiedImageStream(meta); err != nil {
+	// 	return err
+	// }
+
+	// if err := r.reconcileMarketplaceImageStream(meta); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
