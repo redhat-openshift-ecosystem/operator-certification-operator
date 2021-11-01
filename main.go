@@ -31,6 +31,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	imagev1 "github.com/openshift/api/image/v1"
+	operatorsv1a1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	certificationv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/operator-certification-operator/controllers"
 	//+kubebuilder:scaffold:imports
@@ -75,6 +77,16 @@ func main() {
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
+
+	if err := imagev1.AddToScheme(mgr.GetScheme()); err != nil {
+		setupLog.Error(err, "unable to register image scheme")
+		os.Exit(1)
+	}
+
+	if err := operatorsv1a1.AddToScheme(mgr.GetScheme()); err != nil {
+		setupLog.Error(err, "unable to register operators scheme")
 		os.Exit(1)
 	}
 

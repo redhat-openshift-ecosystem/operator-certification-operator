@@ -19,12 +19,16 @@ package controllers
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	certificationv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
+	imagev1 "github.com/openshift/api/image/v1"
+	operatorsv1a1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 )
 
 // OperatorPipelineReconciler reconciles a OperatorPipeline object
@@ -36,20 +40,31 @@ type OperatorPipelineReconciler struct {
 //+kubebuilder:rbac:groups=certification.redhat.com,resources=operatorpipelines,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=certification.redhat.com,resources=operatorpipelines/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=certification.redhat.com,resources=operatorpipelines/finalizers,verbs=update
+//+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=image.openshift.io,resources=imagestreams,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=image.openshift.io,resources=imagestreamimports,verbs=create
+//+kubebuilder:rbac:groups=operators.coreos.com,resources=subscriptions,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the OperatorPipeline object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.9.2/pkg/reconcile
 func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// your logic here
+	pipeline := &certv1alpha1.OperatorPipeline{}
+	err := r.Client.Get(ctx, req.NamespacedName, pipeline)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request. Return and don't
+			return ctrl.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		return ctrl.Result{}, err
+	}
+
+	err = r.reconcileResources(pipeline.ObjectMeta)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -57,6 +72,9 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 // SetupWithManager sets up the controller with the Manager.
 func (r *OperatorPipelineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&certificationv1alpha1.OperatorPipeline{}).
+		For(&certv1alpha1.OperatorPipeline{}).
+		Owns(&corev1.Secret{}).
+		Owns(&imagev1.ImageStream{}).
+		Owns(&operatorsv1a1.Subscription{}).
 		Complete(r)
 }
