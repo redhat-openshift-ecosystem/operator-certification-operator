@@ -74,6 +74,11 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies() error {
 		return err
 	}
 
+	// Removing cloned project
+	if err = os.RemoveAll(targetPath); err != nil {
+		log.Log.Info("Couldn't remove operator-pipelines directory")
+		return err
+	}
 	return nil
 }
 
