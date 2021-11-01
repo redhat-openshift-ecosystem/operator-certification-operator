@@ -6,6 +6,11 @@ import (
 	"io"
 	"io/ioutil"
 
+	"os"
+
+	"path/filepath"
+
+	git "github.com/go-git/go-git/v5"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -21,11 +26,62 @@ import (
 
 func (r *OperatorPipelineReconciler) reconcilePipelineDependencies() error {
 
-	filename := "test.yaml"
+	defaultNS := "test"
 
-	b, err := ioutil.ReadFile(filename)
+	// Cloning operator-pipelines project to retrieve pipelines and tasks
+	// yaml manifests that need to be applied beforehand
+	// ref: https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#step-6---install-the-certification-pipeline-and-dependencies-into-the-cluster
+
+	targetPath := "bin/operator-pipelines/"
+	repo := "https://github.com/redhat-openshift-ecosystem/operator-pipelines.git"
+
+	_, err := git.PlainClone(targetPath, false, &git.CloneOptions{
+		URL:      repo,
+		Progress: os.Stdout,
+	})
 	if err != nil {
-		log.Log.Info("Couldn't read manifest file", "File:", filename)
+		log.Log.Info("Couldn't clone the repository for operator-pipelines.")
+		return err
+	}
+
+	// Reading pipeline manifests and applying to cluster
+	root := targetPath + "ansible/roles/operator-pipeline/templates/openshift/pipelines"
+	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			if errors := r.applyManifests(path, defaultNS); errors != nil {
+				return errors
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		log.Log.Info("Couldn't iterate over operator-pipelines yaml manifest files")
+		return err
+	}
+
+	// Reading tasks manifests and applying it to cluster
+	root = targetPath + "ansible/roles/operator-pipeline/templates/openshift/tasks"
+	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			if errors := r.applyManifests(path, defaultNS); errors != nil {
+				return errors
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		log.Log.Info("Couldn't iterate over operator-pipelines yaml manifest files")
+		return err
+	}
+
+	return nil
+}
+
+func (r *OperatorPipelineReconciler) applyManifests(fileName string, defaultNamespace string) error {
+
+	b, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		log.Log.Info("Couldn't read manifest file", "File:", fileName)
 		return err
 	}
 
@@ -47,6 +103,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies() error {
 		return err
 	}
 
+	// Decoding yaml files to resource objects and apply to cluster
 	decoder := yamlutil.NewYAMLOrJSONDecoder(bytes.NewReader(b), 100)
 	for {
 		var rawObj runtime.RawExtension
@@ -83,7 +140,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies() error {
 		var dri dynamic.ResourceInterface
 		if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
 			if unstructuredObj.GetNamespace() == "" {
-				unstructuredObj.SetNamespace("default")
+				unstructuredObj.SetNamespace(defaultNamespace)
 			}
 			dri = dd.Resource(mapping.Resource).Namespace(unstructuredObj.GetNamespace())
 		} else {

@@ -3,6 +3,7 @@ module github.com/redhat-openshift-ecosystem/operator-certification-operator
 go 1.16
 
 require (
+	github.com/go-git/go-git/v5 v5.4.2
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.13.0
 	github.com/openshift/api v3.9.0+incompatible
