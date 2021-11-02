@@ -25,6 +25,7 @@ import (
 )
 
 const (
+	OPERATOR_PIPELINES_REPO = "https://github.com/redhat-openshift-ecosystem/operator-pipelines.git"
 	REPO_CLONE_PATH         = "/tmp/operator-pipelines/"
 	PIPELINE_MANIFESTS_PATH = "ansible/roles/operator-pipeline/templates/openshift/pipelines"
 	TASKS_MANIFESTS_PATH    = "ansible/roles/operator-pipeline/templates/openshift/tasks"
@@ -36,10 +37,8 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.O
 	// yaml manifests that need to be applied beforehand
 	// ref: https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#step-6---install-the-certification-pipeline-and-dependencies-into-the-cluster
 
-	repo := "https://github.com/redhat-openshift-ecosystem/operator-pipelines.git"
-
 	_, err := git.PlainClone(REPO_CLONE_PATH, false, &git.CloneOptions{
-		URL:      repo,
+		URL:      OPERATOR_PIPELINES_REPO,
 		Progress: os.Stdout,
 	})
 	if err != nil {
