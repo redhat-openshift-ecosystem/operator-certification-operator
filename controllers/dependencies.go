@@ -24,18 +24,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func (r *OperatorPipelineReconciler) reconcilePipelineDependencies() error {
+const (
+	PIPELINE_TASKS_NAMESPACE = "pipeline-tasks"
+	REPO_CLONE_PATH          = "/tmp/operator-pipelines/"
+	PIPELINE_MANIFESTS_PATH  = "ansible/roles/operator-pipeline/templates/openshift/pipelines"
+	TASKS_MANIFESTS_PATH     = "ansible/roles/operator-pipeline/templates/openshift/tasks"
+)
 
-	defaultNS := "test"
+func (r *OperatorPipelineReconciler) reconcilePipelineDependencies() error {
 
 	// Cloning operator-pipelines project to retrieve pipelines and tasks
 	// yaml manifests that need to be applied beforehand
 	// ref: https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#step-6---install-the-certification-pipeline-and-dependencies-into-the-cluster
 
-	targetPath := "bin/operator-pipelines/"
 	repo := "https://github.com/redhat-openshift-ecosystem/operator-pipelines.git"
 
-	_, err := git.PlainClone(targetPath, false, &git.CloneOptions{
+	_, err := git.PlainClone(REPO_CLONE_PATH, false, &git.CloneOptions{
 		URL:      repo,
 		Progress: os.Stdout,
 	})
@@ -45,10 +49,10 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies() error {
 	}
 
 	// Reading pipeline manifests and applying to cluster
-	root := targetPath + "ansible/roles/operator-pipeline/templates/openshift/pipelines"
+	root := REPO_CLONE_PATH + PIPELINE_MANIFESTS_PATH
 	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
-			if errors := r.applyManifests(path, defaultNS); errors != nil {
+			if errors := r.applyManifests(path, PIPELINE_TASKS_NAMESPACE); errors != nil {
 				return errors
 			}
 		}
@@ -60,10 +64,10 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies() error {
 	}
 
 	// Reading tasks manifests and applying it to cluster
-	root = targetPath + "ansible/roles/operator-pipeline/templates/openshift/tasks"
+	root = REPO_CLONE_PATH + TASKS_MANIFESTS_PATH
 	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
-			if errors := r.applyManifests(path, defaultNS); errors != nil {
+			if errors := r.applyManifests(path, PIPELINE_TASKS_NAMESPACE); errors != nil {
 				return errors
 			}
 		}
@@ -75,7 +79,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies() error {
 	}
 
 	// Removing cloned project
-	if err = os.RemoveAll(targetPath); err != nil {
+	if err = os.RemoveAll(PIPELINE_MANIFESTS_PATH); err != nil {
 		log.Log.Info("Couldn't remove operator-pipelines directory")
 		return err
 	}
