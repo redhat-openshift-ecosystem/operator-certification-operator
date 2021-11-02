@@ -201,3 +201,12 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+.PHONY: test-sanity
+test-sanity: tidy vet fmt
+
+.PHONY: tidy
+tidy:
+	go mod tidy
+	git diff --exit-code
+
