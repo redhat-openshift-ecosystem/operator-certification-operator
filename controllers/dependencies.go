@@ -25,13 +25,12 @@ import (
 )
 
 const (
-	PIPELINE_TASKS_NAMESPACE = "pipeline-tasks"
-	REPO_CLONE_PATH          = "/tmp/operator-pipelines/"
-	PIPELINE_MANIFESTS_PATH  = "ansible/roles/operator-pipeline/templates/openshift/pipelines"
-	TASKS_MANIFESTS_PATH     = "ansible/roles/operator-pipeline/templates/openshift/tasks"
+	REPO_CLONE_PATH         = "/tmp/operator-pipelines/"
+	PIPELINE_MANIFESTS_PATH = "ansible/roles/operator-pipeline/templates/openshift/pipelines"
+	TASKS_MANIFESTS_PATH    = "ansible/roles/operator-pipeline/templates/openshift/tasks"
 )
 
-func (r *OperatorPipelineReconciler) reconcilePipelineDependencies() error {
+func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.ObjectMeta) error {
 
 	// Cloning operator-pipelines project to retrieve pipelines and tasks
 	// yaml manifests that need to be applied beforehand
@@ -52,7 +51,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies() error {
 	root := REPO_CLONE_PATH + PIPELINE_MANIFESTS_PATH
 	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
-			if errors := r.applyManifests(path, PIPELINE_TASKS_NAMESPACE); errors != nil {
+			if errors := r.applyManifests(path, meta.Namespace); errors != nil {
 				return errors
 			}
 		}
@@ -67,7 +66,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies() error {
 	root = REPO_CLONE_PATH + TASKS_MANIFESTS_PATH
 	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
-			if errors := r.applyManifests(path, PIPELINE_TASKS_NAMESPACE); errors != nil {
+			if errors := r.applyManifests(path, meta.Namespace); errors != nil {
 				return errors
 			}
 		}
@@ -86,7 +85,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies() error {
 	return nil
 }
 
-func (r *OperatorPipelineReconciler) applyManifests(fileName string, defaultNamespace string) error {
+func (r *OperatorPipelineReconciler) applyManifests(fileName string, Namespace string) error {
 
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -149,7 +148,7 @@ func (r *OperatorPipelineReconciler) applyManifests(fileName string, defaultName
 		var dri dynamic.ResourceInterface
 		if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
 			if unstructuredObj.GetNamespace() == "" {
-				unstructuredObj.SetNamespace(defaultNamespace)
+				unstructuredObj.SetNamespace(Namespace)
 			}
 			dri = dd.Resource(mapping.Resource).Namespace(unstructuredObj.GetNamespace())
 		} else {

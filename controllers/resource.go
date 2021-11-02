@@ -44,7 +44,7 @@ func (r *OperatorPipelineReconciler) reconcileResources(meta metav1.ObjectMeta) 
 		return err
 	}
 
-	if err := r.reconcilePipelineDependencies(); err != nil {
+	if err := r.reconcilePipelineDependencies(meta); err != nil {
 		return err
 	}
 
