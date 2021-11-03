@@ -17,4 +17,4 @@ jobs:
       with:
         fetch-depth: 0
     - run: sudo rm -rf /usr/local/bin/kustomize
-    - run: make test-sanity
+    - run: make test
