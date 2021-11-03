@@ -44,7 +44,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.O
 		log.Log.Info("Couldn't clone the repository for operator-pipelines.")
 		return err
 	}
-	defer r.RemovePipelineDependencyFiles(REPO_CLONE_PATH)
+	defer r.removePipelineDependencyFiles(REPO_CLONE_PATH)
 
 	// Reading pipeline manifests and applying to cluster
 	root := REPO_CLONE_PATH + PIPELINE_MANIFESTS_PATH
@@ -79,7 +79,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.O
 	return nil
 }
 
-func (r *OperatorPipelineReconciler) RemovePipelineDependencyFiles(filePath string) error {
+func (r *OperatorPipelineReconciler) removePipelineDependencyFiles(filePath string) error {
 	if err := os.RemoveAll(filePath); err != nil {
 		log.Log.Info("Couldn't remove operator-pipelines directory")
 		return err
