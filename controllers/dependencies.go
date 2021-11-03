@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 
 	"os"
 
@@ -90,7 +89,7 @@ func (r *OperatorPipelineReconciler) RemovePipelineDependencyFiles(filePath stri
 
 func (r *OperatorPipelineReconciler) applyManifests(fileName string, Namespace string) error {
 
-	b, err := ioutil.ReadFile(fileName)
+	b, err := os.ReadFile(fileName)
 	if err != nil {
 		log.Log.Info("Couldn't read manifest file", "File:", fileName)
 		return err
