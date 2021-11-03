@@ -20,8 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -30,6 +32,7 @@ import (
 const (
 	KUBECONFIG_SECRET = "kubeconfig"
 	GITHUB_API_SECRET = "github-api-token"
+	GITHUB_TOKEN      = "GITHUB_TOKEN"
 	PYXIS_API_SECRET  = "pyxis-api-secret"
 )
 
@@ -80,18 +83,57 @@ func (r *OperatorPipelineReconciler) reconcileKubeConfigSecret(meta metav1.Objec
 
 // reconcileGitHubAPISecret will ensure that the GitHub API Secret is present and up to date.
 func (r *OperatorPipelineReconciler) reconcileGitHubAPISecret(meta metav1.ObjectMeta) error {
+
+	namespaceName := types.NamespacedName{
+		Namespace: meta.Namespace,
+		Name:      meta.Name,
+	}
+
+	operatorPipeline := &certv1alpha1.OperatorPipeline{}
+	err := r.Client.Get(context.TODO(), namespaceName, operatorPipeline)
+	if err != nil {
+		if k8errors.IsNotFound(err) {
+			log.Info("pipeline resource not found. Ignoring since object must be deleted")
+			return nil
+		}
+
+		log.Error(err, fmt.Sprintf("unable to retrieve pipeline resource in namespace: %s ", meta.Namespace))
+		return err
+	}
+
+	var gitHubSecretName = GITHUB_API_SECRET
+	if operatorPipeline.Spec.GitHubSecretName != "" {
+		gitHubSecretName = operatorPipeline.Spec.GitHubSecretName
+	}
+
 	key := types.NamespacedName{
 		Namespace: meta.Namespace,
-		Name:      GITHUB_API_SECRET,
+		Name:      gitHubSecretName,
 	}
 
 	secret := newSecret(key)
-	if IsObjectFound(r.Client, key, secret) {
-		log.Info("existing github api secret found")
-		return nil // Existing Secret found, do nothing...
+	if !IsObjectFound(r.Client, key, secret) {
+		return errors.New(fmt.Sprintf("github api secret not found in namespace: %s", meta.Namespace))
 	}
 
-	return errors.New("github api secret not found")
+	gitHubSecret := &corev1.Secret{}
+	if err = r.Get(context.TODO(), key, gitHubSecret); err != nil {
+		log.Error(err, fmt.Sprintf("unable to retrieve github api secret in namespace: %s ", meta.Namespace))
+		return err
+	}
+
+	// checking to make sure that the key is present in the map before continue to verify the data
+	if value, ok := gitHubSecret.Data[GITHUB_TOKEN]; ok {
+		if value == nil || string(value) == "" {
+			return errors.New(fmt.Sprintf("github api secret found, but has an empty token value for: %s", GITHUB_TOKEN))
+		}
+
+		log.Info(fmt.Sprintf("github api secret with proper token name found in namespace: %s", meta.Namespace))
+	} else {
+		return errors.New(fmt.Sprintf("github api secret found, but has an improper token name, token name should be: %s", GITHUB_TOKEN))
+	}
+
+	return nil // Existing Secret found, do nothing...
 }
 
 // reconcilePyxisAPISecret will ensure that the Pyxis API Secret is present and up to date.
