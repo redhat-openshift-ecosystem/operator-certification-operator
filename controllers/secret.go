@@ -20,10 +20,10 @@ import (
 	"context"
 	"errors"
 
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -41,11 +41,11 @@ func (r *OperatorPipelineReconciler) reconcileKubeConfigSecret(meta metav1.Objec
 
 	secret := newSecret(key)
 	if IsObjectFound(r.Client, key, secret) {
-		log.Log.Info("existing kubeconfig secret found")
+		log.Info("existing kubeconfig secret found")
 		return nil // Existing Secret found, do nothing...
 	}
 
-	log.Log.Info("creating new kubeconfig secret")
+	log.Info("creating new kubeconfig secret")
 	return r.Client.Create(context.TODO(), secret)
 }
 
@@ -58,7 +58,7 @@ func (r *OperatorPipelineReconciler) reconcileGitHubAPISecret(meta metav1.Object
 
 	secret := newSecret(key)
 	if IsObjectFound(r.Client, key, secret) {
-		log.Log.Info("existing github api secret found")
+		log.Info("existing github api secret found")
 		return nil // Existing Secret found, do nothing...
 	}
 
@@ -74,7 +74,7 @@ func (r *OperatorPipelineReconciler) reconcilePyxisAPISecret(meta metav1.ObjectM
 
 	secret := newSecret(key)
 	if IsObjectFound(r.Client, key, secret) {
-		log.Log.Info("existing pyxis api secret found")
+		log.Info("existing pyxis api secret found")
 		return nil // Existing Secret found, do nothing...
 	}
 
