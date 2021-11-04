@@ -39,7 +39,12 @@ func IsObjectFound(client client.Client, key types.NamespacedName, obj client.Ob
 
 // reconcileResources will ensure that all required resources are present and up to date.
 func (r *OperatorPipelineReconciler) reconcileResources(meta metav1.ObjectMeta) error {
+
 	if err := r.reconcilePipelineOperator(meta); err != nil {
+		return err
+	}
+
+	if err := r.reconcilePipelineDependencies(meta); err != nil {
 		return err
 	}
 

@@ -23,7 +23,6 @@ import (
 	operatorsv1a1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -38,7 +37,7 @@ const (
 
 // reconcilePipelineOperator will ensure that the resources are present to provision the OpenShift Pipeline Operator
 func (r *OperatorPipelineReconciler) reconcilePipelineOperator(meta metav1.ObjectMeta) error {
-	log.Log.Info("reconciling pipeline operator")
+	log.Info("reconciling pipeline operator")
 
 	key := types.NamespacedName{
 		Namespace: OS_OPERATORS_NAMESPACE,
@@ -47,7 +46,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineOperator(meta metav1.Objec
 
 	sub := newSubscription(key)
 	if IsObjectFound(r.Client, key, sub) {
-		log.Log.Info("existing subscription found")
+		log.Info("existing subscription found")
 		return nil // Existing Subscription found, do nothing...
 	}
 
@@ -60,7 +59,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineOperator(meta metav1.Objec
 		StartingCSV:            fmt.Sprintf("%s.%s", PIPELINES_OPERATOR_NAME, PIPELINES_OPERATOR_VERSION),
 	}
 
-	log.Log.Info("creating new subscription")
+	log.Info("creating new subscription")
 	return r.Client.Create(context.TODO(), sub)
 }
 
