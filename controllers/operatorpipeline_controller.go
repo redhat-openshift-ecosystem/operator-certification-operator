@@ -18,17 +18,18 @@ package controllers
 
 import (
 	"context"
-
 	imagev1 "github.com/openshift/api/image/v1"
 	operatorsv1a1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
-	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
+
+var log = logf.Log.WithName("controller_operatorpipeline")
 
 // OperatorPipelineReconciler reconciles a OperatorPipeline object
 type OperatorPipelineReconciler struct {
@@ -47,8 +48,8 @@ type OperatorPipelineReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.WithContext(ctx)
-	log.SetFormatter(&log.TextFormatter{})
+	reqLogger := logf.FromContext(ctx, "Request.Namespace", req.Namespace, "Request.Name", req.Name)
+	reqLogger.Info("Reconciling OperatorPipeline")
 
 	pipeline := &certv1alpha1.OperatorPipeline{}
 	err := r.Client.Get(ctx, req.NamespacedName, pipeline)
