@@ -23,7 +23,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -40,7 +39,7 @@ func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(meta metav1.O
 
 	stream := newImageStream(key)
 	if IsObjectFound(r.Client, key, stream) {
-		log.Log.Info("existing certified image stream found")
+		log.Info("existing certified image stream found")
 		return nil // Existing ImageStream found, do nothing...
 	}
 
@@ -59,7 +58,7 @@ func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(meta metav1.O
 		},
 	}
 
-	log.Log.Info("creating new certified image stream import")
+	log.Info("creating new certified image stream import")
 	return r.Client.Create(context.TODO(), imgimport)
 }
 
@@ -72,7 +71,7 @@ func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(meta metav1
 
 	stream := newImageStream(key)
 	if IsObjectFound(r.Client, key, stream) {
-		log.Log.Info("existing marketplace image stream found")
+		log.Info("existing marketplace image stream found")
 		return nil // Existing ImageStream found, do nothing...
 	}
 
@@ -91,7 +90,7 @@ func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(meta metav1
 		},
 	}
 
-	log.Log.Info("creating new marketplace image stream import")
+	log.Info("creating new marketplace image stream import")
 	return r.Client.Create(context.TODO(), imgimport)
 }
 
