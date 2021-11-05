@@ -35,6 +35,7 @@ import (
 	operatorsv1a1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	certificationv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/operator-certification-operator/controllers"
+	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -47,6 +48,9 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(certificationv1alpha1.AddToScheme(scheme))
+	//+kubebuilder:scaffold:scheme
+
+	utilruntime.Must(tekton.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

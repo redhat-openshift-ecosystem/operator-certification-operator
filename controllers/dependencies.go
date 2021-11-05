@@ -1,25 +1,18 @@
 package controllers
 
 import (
-	"bytes"
 	"context"
-	"io"
+	"fmt"
 
 	"os"
 
 	"path/filepath"
 
 	git "github.com/go-git/go-git/v5"
-	"k8s.io/apimachinery/pkg/api/meta"
+	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/restmapper"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -27,7 +20,7 @@ const (
 	OPERATOR_PIPELINES_REPO = "https://github.com/redhat-openshift-ecosystem/operator-pipelines.git"
 	REPO_CLONE_PATH         = "/tmp/operator-pipelines/"
 	PIPELINE_MANIFESTS_PATH = "ansible/roles/operator-pipeline/templates/openshift/pipelines"
-	TASKS_MANIFESTS_PATH    = "ansible/roles/operator-pipeline/templates/openshift/tasks"
+	TASK_MANIFESTS_PATH     = "ansible/roles/operator-pipeline/templates/openshift/tasks"
 )
 
 func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.ObjectMeta) error {
@@ -37,45 +30,50 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.O
 	// ref: https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#step-6---install-the-certification-pipeline-and-dependencies-into-the-cluster
 
 	_, err := git.PlainClone(REPO_CLONE_PATH, false, &git.CloneOptions{
-		URL:      OPERATOR_PIPELINES_REPO,
-		Progress: os.Stdout,
+		URL: OPERATOR_PIPELINES_REPO,
+		// Progress: os.Stdout,
 	})
 	if err != nil {
-		log.Log.Info("Couldn't clone the repository for operator-pipelines.")
+		log.Log.Info("Couldn't clone the repository for operator-pipelines: " + err.Error())
 		return err
 	}
 	defer r.removePipelineDependencyFiles(REPO_CLONE_PATH)
 
-	// Reading pipeline manifests and applying to cluster
-	root := REPO_CLONE_PATH + PIPELINE_MANIFESTS_PATH
-	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			if errors := r.applyManifests(path, meta.Namespace); errors != nil {
-				return errors
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		log.Log.Info("Couldn't iterate over operator-pipelines yaml manifest files")
-		return err
-	}
+	paths := []string{PIPELINE_MANIFESTS_PATH, TASK_MANIFESTS_PATH}
+	for _, path := range paths {
 
-	// Reading tasks manifests and applying it to cluster
-	root = REPO_CLONE_PATH + TASKS_MANIFESTS_PATH
-	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			if errors := r.applyManifests(path, meta.Namespace); errors != nil {
-				return errors
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		log.Log.Info("Couldn't iterate over operator-pipelines yaml manifest files")
-		return err
-	}
+		// base repository root + specific yaml manifest directory (pipelines or tasks)
+		root := REPO_CLONE_PATH + path
 
+		// walking through the each directory (pipelines or tasks)
+		err = filepath.Walk(root, func(filePath string, info os.FileInfo, err error) error {
+
+			// For each file NOT directories
+			if !info.IsDir() {
+				var pipeline tekton.Pipeline
+				var task tekton.Task
+				fmt.Print(path)
+
+				// apply pipeline yaml manifests
+				if path == PIPELINE_MANIFESTS_PATH {
+					if errors := r.applyManifests(filePath, meta.Namespace, &pipeline); errors != nil {
+						return errors
+					}
+
+					// or apply tasks manifests
+				} else {
+					if errors := r.applyManifests(filePath, meta.Namespace, &task); errors != nil {
+						return errors
+					}
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			log.Log.Info("Couldn't iterate over operator-pipelines yaml manifest files: " + err.Error())
+			return err
+		}
+	}
 	return nil
 }
 
@@ -87,84 +85,22 @@ func (r *OperatorPipelineReconciler) removePipelineDependencyFiles(filePath stri
 	return nil
 }
 
-func (r *OperatorPipelineReconciler) applyManifests(fileName string, Namespace string) error {
+func (r *OperatorPipelineReconciler) applyManifests(fileName string, Namespace string, obj client.Object) error {
 
 	b, err := os.ReadFile(fileName)
 	if err != nil {
-		log.Log.Info("Couldn't read manifest file", "File:", fileName)
+		log.Log.Info("Couldn't read manifest file " + err.Error())
 		return err
 	}
 
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		log.Log.Info("Couldn't get in cluster config.")
+	if err = yamlutil.Unmarshal(b, &obj); err != nil {
 		return err
 	}
 
-	c, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		log.Log.Info("Couldn't initialize kubernetes client from config.")
+	obj.SetNamespace(Namespace)
+	if err = r.Client.Create(context.Background(), obj); err != nil {
 		return err
 	}
 
-	dd, err := dynamic.NewForConfig(config)
-	if err != nil {
-		log.Log.Info("Couldn't initialize dynamic k8s client from config.")
-		return err
-	}
-
-	// Decoding yaml files to resource objects and apply to cluster
-	decoder := yamlutil.NewYAMLOrJSONDecoder(bytes.NewReader(b), 100)
-	for {
-		var rawObj runtime.RawExtension
-		if err = decoder.Decode(&rawObj); err != nil {
-			break
-		}
-
-		obj, gvk, err := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme).Decode(rawObj.Raw, nil, nil)
-		if err != nil {
-			log.Log.Info("Couldn't decode obj and gvk.")
-			return err
-		}
-		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
-		if err != nil {
-			log.Log.Info("Coundn't convert obj to unstructured Map")
-			return err
-		}
-
-		unstructuredObj := &unstructured.Unstructured{Object: unstructuredMap}
-
-		gr, err := restmapper.GetAPIGroupResources(c.Discovery())
-		if err != nil {
-			log.Log.Info("Couldn't get API group resources")
-			return err
-		}
-
-		mapper := restmapper.NewDiscoveryRESTMapper(gr)
-		mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
-		if err != nil {
-			log.Log.Info("Couldn't the preferred resource mapping for given kind.")
-			return err
-		}
-
-		var dri dynamic.ResourceInterface
-		if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
-			if unstructuredObj.GetNamespace() == "" {
-				unstructuredObj.SetNamespace(Namespace)
-			}
-			dri = dd.Resource(mapping.Resource).Namespace(unstructuredObj.GetNamespace())
-		} else {
-			dri = dd.Resource(mapping.Resource)
-		}
-
-		if _, err := dri.Create(context.Background(), unstructuredObj, metav1.CreateOptions{}); err != nil {
-			log.Log.Info("Couldn't create resource.")
-			return err
-		}
-	}
-	if err != io.EOF {
-		log.Log.Info("Error ocurred reading file.")
-		return err
-	}
 	return nil
 }
