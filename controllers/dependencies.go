@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"os"
 
@@ -13,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -31,10 +29,9 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.O
 
 	_, err := git.PlainClone(REPO_CLONE_PATH, false, &git.CloneOptions{
 		URL: OPERATOR_PIPELINES_REPO,
-		// Progress: os.Stdout,
 	})
 	if err != nil {
-		log.Log.Info("Couldn't clone the repository for operator-pipelines: " + err.Error())
+		log.Info("Couldn't clone the repository for operator-pipelines: " + err.Error())
 		return err
 	}
 	defer r.removePipelineDependencyFiles(REPO_CLONE_PATH)
@@ -52,7 +49,6 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.O
 			if !info.IsDir() {
 				var pipeline tekton.Pipeline
 				var task tekton.Task
-				fmt.Print(path)
 
 				// apply pipeline yaml manifests
 				if path == PIPELINE_MANIFESTS_PATH {
@@ -70,7 +66,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.O
 			return nil
 		})
 		if err != nil {
-			log.Log.Info("Couldn't iterate over operator-pipelines yaml manifest files: " + err.Error())
+			log.Info("Couldn't iterate over operator-pipelines yaml manifest files: " + err.Error())
 			return err
 		}
 	}
@@ -79,7 +75,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.O
 
 func (r *OperatorPipelineReconciler) removePipelineDependencyFiles(filePath string) error {
 	if err := os.RemoveAll(filePath); err != nil {
-		log.Log.Info("Couldn't remove operator-pipelines directory")
+		log.Info("Couldn't remove operator-pipelines directory")
 		return err
 	}
 	return nil
@@ -89,7 +85,7 @@ func (r *OperatorPipelineReconciler) applyManifests(fileName string, Namespace s
 
 	b, err := os.ReadFile(fileName)
 	if err != nil {
-		log.Log.Info("Couldn't read manifest file " + err.Error())
+		log.Info("Couldn't read manifest file " + err.Error())
 		return err
 	}
 
