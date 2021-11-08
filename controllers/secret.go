@@ -19,8 +19,10 @@ package controllers
 import (
 	"context"
 	"errors"
-
+	"fmt"
+	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -33,19 +35,47 @@ const (
 
 // reconcileKubeConfigSecret will ensure that the kubeconfig Secret is present and up to date.
 func (r *OperatorPipelineReconciler) reconcileKubeConfigSecret(meta metav1.ObjectMeta) error {
+	pipelineName := types.NamespacedName{
+		Namespace: meta.Namespace,
+		Name:      meta.Name,
+	}
+	pipeline := &certv1alpha1.OperatorPipeline{}
+	err := r.Client.Get(context.TODO(), pipelineName, pipeline)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			log.Info("pipeline resource not found. Ignoring since object must be deleted")
+			return nil
+		}
+		log.Error(err, "unable to retrieve pipeline resource in namespace "+meta.Namespace)
+		return err
+	}
+	var secretName = KUBECONFIG_SECRET
+	if pipeline.Spec.KubeconfigSecretName != "" {
+		secretName = pipeline.Spec.KubeconfigSecretName
+	}
 	key := types.NamespacedName{
 		Namespace: meta.Namespace,
-		Name:      KUBECONFIG_SECRET,
+		Name:      secretName,
 	}
-
 	secret := newSecret(key)
-	if IsObjectFound(r.Client, key, secret) {
-		log.Info("existing kubeconfig secret found")
-		return nil // Existing Secret found, do nothing...
+	if !IsObjectFound(r.Client, key, secret) {
+		err := errors.New(fmt.Sprintf("An existing secret named %s was not found in namespace %s", secretName, meta.Namespace))
+		log.Error(err, fmt.Sprintf("unable to reconcile kubeconfig in namespace %s", meta.Namespace))
+		return err
 	}
-
-	log.Info("creating new kubeconfig secret")
-	return r.Client.Create(context.TODO(), secret)
+	log.Info(fmt.Sprintf("existing %s secret found in namespace %s", secretName, meta.Namespace))
+	kubeConfigSecret := &corev1.Secret{}
+	err = r.Client.Get(context.TODO(), key, kubeConfigSecret)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("unable to get the %s secret", secretName))
+		return err
+	}
+	if kubeConfigSecret.Data[KUBECONFIG_SECRET] == nil {
+		err = errors.New(fmt.Sprintf("the kubeconfig key in %s is empty!", secretName))
+		log.Error(err, fmt.Sprintf("The %s secret does not contain a kubeconfig", secretName))
+		return err
+	}
+	return nil // Existing Secret found, do nothing...
 }
 
 // reconcileGitHubAPISecret will ensure that the GitHub API Secret is present and up to date.
