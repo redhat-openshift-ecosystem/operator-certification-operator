@@ -31,7 +31,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.O
 		URL: OPERATOR_PIPELINES_REPO,
 	})
 	if err != nil {
-		log.Info("Couldn't clone the repository for operator-pipelines: " + err.Error())
+		log.Error(err, "Couldn't clone the repository for operator-pipelines")
 		return err
 	}
 	defer r.removePipelineDependencyFiles(REPO_CLONE_PATH)
@@ -53,12 +53,14 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.O
 				// apply pipeline yaml manifests
 				if path == PIPELINE_MANIFESTS_PATH {
 					if errors := r.applyManifests(filePath, meta.Namespace, &pipeline); errors != nil {
+						log.Error(errors, "Couldn't apply pipeline manifest")
 						return errors
 					}
 
 					// or apply tasks manifests
 				} else {
 					if errors := r.applyManifests(filePath, meta.Namespace, &task); errors != nil {
+						log.Error(errors, "Couldn't apply task manifest")
 						return errors
 					}
 				}
@@ -66,7 +68,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.O
 			return nil
 		})
 		if err != nil {
-			log.Info("Couldn't iterate over operator-pipelines yaml manifest files: " + err.Error())
+			log.Error(err, "Couldn't iterate over operator-pipelines yaml manifest files")
 			return err
 		}
 	}
@@ -75,7 +77,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.O
 
 func (r *OperatorPipelineReconciler) removePipelineDependencyFiles(filePath string) error {
 	if err := os.RemoveAll(filePath); err != nil {
-		log.Info("Couldn't remove operator-pipelines directory")
+		log.Error(err, "Couldn't remove operator-pipelines directory")
 		return err
 	}
 	return nil
@@ -85,16 +87,18 @@ func (r *OperatorPipelineReconciler) applyManifests(fileName string, Namespace s
 
 	b, err := os.ReadFile(fileName)
 	if err != nil {
-		log.Info("Couldn't read manifest file " + err.Error())
+		log.Error(err, "Couldn't read manifest file")
 		return err
 	}
 
 	if err = yamlutil.Unmarshal(b, &obj); err != nil {
+		log.Error(err, "Couldn't unmarshall yaml file")
 		return err
 	}
 
 	obj.SetNamespace(Namespace)
 	if err = r.Client.Create(context.Background(), obj); err != nil {
+		log.Error(err, "Couldn't create resource")
 		return err
 	}
 
