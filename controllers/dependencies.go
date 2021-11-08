@@ -30,11 +30,11 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(meta metav1.O
 	_, err := git.PlainClone(REPO_CLONE_PATH, false, &git.CloneOptions{
 		URL: OPERATOR_PIPELINES_REPO,
 	})
+	defer r.removePipelineDependencyFiles(REPO_CLONE_PATH)
 	if err != nil {
 		log.Error(err, "Couldn't clone the repository for operator-pipelines")
 		return err
 	}
-	defer r.removePipelineDependencyFiles(REPO_CLONE_PATH)
 
 	paths := []string{PIPELINE_MANIFESTS_PATH, TASK_MANIFESTS_PATH}
 	for _, path := range paths {
