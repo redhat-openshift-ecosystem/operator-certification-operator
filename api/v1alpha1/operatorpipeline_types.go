@@ -33,6 +33,9 @@ type OperatorPipelineSpec struct {
 
 	// KubeconfigSecretName is the name of the secret containing the kubeconfig that will be used by the pipeline.
 	KubeconfigSecretName string `json:"kubeconfigSecretName,omitempty"`
+	
+	// The name of the secret containing the pyxis api secret expected by the pipeline
+	PyxisApiSecretName string `json:"pyxisApiSecretName,omitempty"`
 }
 
 // OperatorPipelineStatus defines the observed state of OperatorPipeline
