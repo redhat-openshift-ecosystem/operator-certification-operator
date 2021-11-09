@@ -5,3 +5,4 @@ metadata:
 spec:
   openShiftPipelineVersion: v1.5.0
   operatorPipelinesRelease: main
+  gitHubSecretName: "github-api-token"
