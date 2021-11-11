@@ -173,8 +173,8 @@ func (r *OperatorPipelineReconciler) reconcilePyxisAPISecret(meta metav1.ObjectM
 		log.Error(err, fmt.Sprintf("unable to get the %s secret", secretName))
 		return err
 	}
-	if pyxisApiSecret.Data[PYXIS_API_SECRET] == nil || len(pyxisApiSecret.Data[PYXIS_API_SECRET]) == 0 {
-		err = errors.New(fmt.Sprintf("the kubeconfig key in %s is empty!", secretName))
+	if pyxisApiSecret.Data[PYXIS_API_KEY] == nil || len(pyxisApiSecret.Data[PYXIS_API_KEY]) == 0 {
+		err = errors.New(fmt.Sprintf("the pyxis api key in %s is empty!", secretName))
 		log.Error(err, fmt.Sprintf("The %s secret does not contain the expected key", secretName))
 		return err
 	}
