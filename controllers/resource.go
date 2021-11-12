@@ -48,15 +48,15 @@ func (r *OperatorPipelineReconciler) reconcileResources(meta metav1.ObjectMeta) 
 		return err
 	}
 
-	if err := r.reconcileKubeConfigSecret(meta); err != nil {
+	if err := r.ensureKubeConfigSecret(meta); err != nil {
 		return err
 	}
 
-	if err := r.reconcileGitHubAPISecret(meta); err != nil {
+	if err := r.ensureGitHubAPISecret(meta); err != nil {
 		return err
 	}
 
-	if err := r.reconcilePyxisAPISecret(meta); err != nil {
+	if err := r.ensurePyxisAPISecret(meta); err != nil {
 		return err
 	}
 
