@@ -17,6 +17,9 @@ jobs:
       id: fetch-latest-release
     - name: Set Env Tags
       run: echo RELEASE_TAG=${{ steps.fetch-latest-release.outputs.latest-release }} >> $GITHUB_ENV
+    - name: Set a default if release tag is empty
+      if: ${{ steps.fetch-latest-release.outputs.latest-release }} == ""
+      run: echo RELEASE_TAG=0.0.0 >> $GITHUB_ENV
 
     - name: Build Operator Image
       id: build-operator-image
