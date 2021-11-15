@@ -27,16 +27,16 @@ jobs:
         dockerfiles: |
           ./Dockerfile
 
-  #  - name: Build Bundle Image
-  #    id: build-bundle-image
-  #    uses: redhat-actions/buildah-build@v2
-  #    with:
-  #      image: ${{ env.IMAGE_REGISTRY }}/operator-certification-operator-bundle
-  #      tags: ${{ env.RELEASE_TAG }}
-  #      build-args: |
-  #        release_tag=${{ env.RELEASE_TAG }}
-  #      dockerfiles: |
-  #        ./bundle.Dockerfile
+    - name: Build Bundle Image
+      id: build-bundle-image
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: ${{ env.IMAGE_REGISTRY }}/operator-certification-operator-bundle
+        tags: ${{ env.RELEASE_TAG }}
+        build-args: |
+          release_tag=${{ env.RELEASE_TAG }}
+        dockerfiles: |
+          ./bundle.Dockerfile
 
     - name: Push Operator Image
       id: push-operator-image
@@ -48,15 +48,15 @@ jobs:
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
     
-  #  - name: Push Bundle Image
-  #    id: push-bundle-image
-  #    uses: redhat-actions/push-to-registry@v2
-  #    with:
-  #      image: operator-certification-operator-bundle
-  #      tags: ${{ steps.build-bundle-image.outputs.tags }}
-  #      registry: ${{ env.IMAGE_REGISTRY }}
-  #      username: ${{ secrets.REGISTRY_USER }}
-  #      password: ${{ secrets.REGISTRY_PASSWORD }}
+    - name: Push Bundle Image
+      id: push-bundle-image
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: operator-certification-operator-bundle
+        tags: ${{ steps.build-bundle-image.outputs.tags }}
+        registry: ${{ env.IMAGE_REGISTRY }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
 
     - run: echo "Operator Image pushed to ${{ steps.push-operator-image.outputs.registry-paths }}"
-  #  - run: echo "Bundle Image pushed to ${{ steps.push-bundle-image.outputs.registry-paths }}"
+    - run: echo "Bundle Image pushed to ${{ steps.push-bundle-image.outputs.registry-paths }}"
