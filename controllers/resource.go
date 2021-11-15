@@ -19,8 +19,8 @@ package controllers
 import (
 	"context"
 
+	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -38,33 +38,33 @@ func IsObjectFound(client client.Client, key types.NamespacedName, obj client.Ob
 }
 
 // reconcileResources will ensure that all required resources are present and up to date.
-func (r *OperatorPipelineReconciler) reconcileResources(meta metav1.ObjectMeta) error {
+func (r *OperatorPipelineReconciler) reconcileResources(pipeline *certv1alpha1.OperatorPipeline) error {
 
-	if err := r.reconcilePipelineOperator(meta); err != nil {
+	if err := r.reconcilePipelineOperator(pipeline.ObjectMeta); err != nil {
 		return err
 	}
 
-	if err := r.reconcilePipelineDependencies(meta); err != nil {
+	if err := r.reconcilePipelineDependencies(pipeline); err != nil {
 		return err
 	}
 
-	if err := r.ensureKubeConfigSecret(meta); err != nil {
+	if err := r.ensureKubeConfigSecret(pipeline.ObjectMeta); err != nil {
 		return err
 	}
 
-	if err := r.ensureGitHubAPISecret(meta); err != nil {
+	if err := r.ensureGitHubAPISecret(pipeline.ObjectMeta); err != nil {
 		return err
 	}
 
-	if err := r.ensurePyxisAPISecret(meta); err != nil {
+	if err := r.ensurePyxisAPISecret(pipeline.ObjectMeta); err != nil {
 		return err
 	}
 
-	if err := r.reconcileCertifiedImageStream(meta); err != nil {
+	if err := r.reconcileCertifiedImageStream(pipeline.ObjectMeta); err != nil {
 		return err
 	}
 
-	if err := r.reconcileMarketplaceImageStream(meta); err != nil {
+	if err := r.reconcileMarketplaceImageStream(pipeline.ObjectMeta); err != nil {
 		return err
 	}
 
