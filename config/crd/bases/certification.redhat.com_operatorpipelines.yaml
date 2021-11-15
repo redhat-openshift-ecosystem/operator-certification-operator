@@ -52,7 +52,7 @@ spec:
                 description: OperatorPipelinesRelease is the Operator Pipelines release
                   (version) to install.
                 type: string
-              pyxisApiSecretName:
+              pyxisSecretName:
                 description: The name of the secret containing the pyxis api secret
                   expected by the pipeline
                 type: string
