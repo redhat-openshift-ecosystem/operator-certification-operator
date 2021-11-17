@@ -26,13 +26,13 @@ import (
 )
 
 const (
-	OS_OPERATORS_NAMESPACE               = "openshift-operators"
-	PIPELINES_OPERATOR_CHANNEL           = "stable"
-	PIPELINES_OPERATOR_CATALOG_SOURCE    = "redhat-operators"
-	PIPELINES_OPERATOR_CATALOG_SOURCE_NS = "openshift-marketplace"
-	PIPELINES_OPERATOR_NAME              = "redhat-openshift-pipelines"
-	PIPELINES_OPERATOR_VERSION           = "v1.5.2"
-	PIPELINES_OPERATOR_SUBSCRIPTION      = "openshift-pipelines-operator-rh"
+	operatorNamespace                      = "openshift-operators"
+	pipelineOperatorChannel                = "stable"
+	pipelineOperatorCatalogSource          = "redhat-operators"
+	pipelineOperatorCatalogSourceNamespace = "openshift-marketplace"
+	pipelineOperatorName                   = "redhat-openshift-pipelines"
+	pipelineOperatorVersion                = "v1.5.2"
+	pipelineOperatorSubscription           = "openshift-pipelines-operator-rh"
 )
 
 // reconcilePipelineOperator will ensure that the resources are present to provision the OpenShift Pipeline Operator
@@ -40,8 +40,8 @@ func (r *OperatorPipelineReconciler) reconcilePipelineOperator(meta metav1.Objec
 	log.Info("reconciling pipeline operator")
 
 	key := types.NamespacedName{
-		Namespace: OS_OPERATORS_NAMESPACE,
-		Name:      PIPELINES_OPERATOR_SUBSCRIPTION,
+		Namespace: operatorNamespace,
+		Name:      pipelineOperatorSubscription,
 	}
 
 	sub := newSubscription(key)
@@ -51,12 +51,12 @@ func (r *OperatorPipelineReconciler) reconcilePipelineOperator(meta metav1.Objec
 	}
 
 	sub.Spec = &operatorsv1a1.SubscriptionSpec{
-		Channel:                PIPELINES_OPERATOR_CHANNEL,
+		Channel:                pipelineOperatorChannel,
 		InstallPlanApproval:    operatorsv1a1.ApprovalAutomatic, // Use ApprovalManual instead?
-		Package:                PIPELINES_OPERATOR_SUBSCRIPTION,
-		CatalogSource:          PIPELINES_OPERATOR_CATALOG_SOURCE,
-		CatalogSourceNamespace: PIPELINES_OPERATOR_CATALOG_SOURCE_NS,
-		StartingCSV:            fmt.Sprintf("%s.%s", PIPELINES_OPERATOR_NAME, PIPELINES_OPERATOR_VERSION),
+		Package:                pipelineOperatorSubscription,
+		CatalogSource:          pipelineOperatorCatalogSource,
+		CatalogSourceNamespace: pipelineOperatorCatalogSourceNamespace,
+		StartingCSV:            fmt.Sprintf("%s.%s", pipelineOperatorName, pipelineOperatorVersion),
 	}
 
 	log.Info("creating new subscription")
