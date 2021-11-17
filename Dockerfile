@@ -18,9 +18,22 @@ RUN go mod download
 # Build
 RUN make build RELEASE_TAG=${release_tag}
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
+
+LABEL \
+    com.redhat.component="operator-certification-operator" \
+    version="0.0.0" \
+    name="operator-certification-operator" \
+    License="Apache-2.0" \
+    io.k8s.display-name="operator-certification-operator bundle" \
+    io.k8s.description="bundle for the operator-certification-operator" \
+    summary="This is the bundle for the operator-certification-operator" \
+    maintainer="opdev" \
+    vendor="Red Hat" \
+    release="${release_tag}" \
+    description="A Kubernetes operator to provision resources for the operator certification"
+    
+COPY LICENSE /licenses
 
 ARG quay_expiration
 
