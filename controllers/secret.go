@@ -34,6 +34,7 @@ const (
 	defaultGithubApiSecretKeyName  = "GITHUB_TOKEN"
 	defaultPyxisApiSecretName      = "pyxis-api-secret"
 	defaultPyxisApiSecretKeyName   = "pyxis_api_key"
+	gitHubSecretAvailable          = "GithubSecretAvailable"
 )
 
 // ensureKubeConfigSecret will ensure that the kubeconfig Secret is present and up to date.
@@ -55,13 +56,37 @@ func (r *OperatorPipelineReconciler) ensureGitHubAPISecret(ctx context.Context, 
 	operatorPipeline, err := r.getPipeline(ctx, meta)
 	if err != nil {
 		log.Error(err, "unable to resolve github secret for %s/%s", meta.Namespace, meta.Name)
+		if err := r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionFalse, reconcileFailed,
+			err.Error()); err != nil {
+			return err
+		}
 		return err
 	}
+
+	if err = r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionUnknown, reconcileUnknown,
+		""); err != nil {
+		return err
+	}
+
 	secretName := defaultGithubApiSecretName
 	if operatorPipeline.Spec.GitHubSecretName != "" {
 		secretName = operatorPipeline.Spec.GitHubSecretName
 	}
-	return r.ensureSecret(ctx, secretName, defaultGithubApiSecretKeyName, meta)
+
+	if err = r.ensureSecret(ctx, secretName, defaultGithubApiSecretKeyName, meta); err != nil {
+		if err := r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionFalse, reconcileFailed,
+			err.Error()); err != nil {
+			return err
+		}
+		return err
+	}
+
+	if err = r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionTrue, reconcileSucceeded,
+		""); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ensurePyxisAPISecret will ensure that the Pyxis API Secret is present and up to date.
