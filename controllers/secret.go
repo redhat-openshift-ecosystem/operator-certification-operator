@@ -94,7 +94,7 @@ func (r *OperatorPipelineReconciler) ensureSecret(secretName string, secretKeyNa
 	}
 	log.Info(fmt.Sprintf("successfully fetched secret %s/%s", meta.Namespace, secretName))
 	if value, ok := secret.Data[secretKeyName]; ok {
-		if value == nil || len(value) == 0 {
+		if len(value) == 0 {
 			log.Error(ErrInvalidSecret, fmt.Sprintf("the %s secret does not contain a valid value at key %s", secretName, secretKeyName))
 			return ErrInvalidSecret
 		}
