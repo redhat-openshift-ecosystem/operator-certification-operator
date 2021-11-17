@@ -26,15 +26,15 @@ import (
 )
 
 const (
-	CERTIFIED_INDEX   = "certified-operator-index"
-	MARKETPLACE_INDEX = "redhat-marketplace-index"
+	certifiedIndex   = "certified-operator-index"
+	marketplaceIndex = "redhat-marketplace-index"
 )
 
 // reconcileCertifiedImageStream will ensure that the certified operator ImageStream is present and up to date.
 func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(meta metav1.ObjectMeta) error {
 	key := types.NamespacedName{
 		Namespace: meta.Namespace,
-		Name:      CERTIFIED_INDEX,
+		Name:      certifiedIndex,
 	}
 
 	stream := newImageStream(key)
@@ -66,7 +66,7 @@ func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(meta metav1.O
 func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(meta metav1.ObjectMeta) error {
 	key := types.NamespacedName{
 		Namespace: meta.Namespace,
-		Name:      MARKETPLACE_INDEX,
+		Name:      marketplaceIndex,
 	}
 
 	stream := newImageStream(key)
