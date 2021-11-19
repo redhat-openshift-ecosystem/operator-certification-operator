@@ -20,6 +20,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
+    operatorframework.io/suggested-namespace: oco
     operators.operatorframework.io/builder: operator-sdk-v1.14.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
   name: operator-certification-operator.v0.0.0-alpha
@@ -232,13 +233,13 @@ spec:
         serviceAccountName: certification-operator-controller-manager
     strategy: deployment
   installModes:
-  - supported: false
+  - supported: true
     type: OwnNamespace
   - supported: false
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
-  - supported: true
+  - supported: false
     type: AllNamespaces
   keywords:
   - certification
