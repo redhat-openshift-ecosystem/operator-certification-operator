@@ -16,5 +16,15 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
+
     - run: sudo rm -rf /usr/local/bin/kustomize
-    - run: make test
+
+    - name: Test
+      run: make test
+
+    - name: Manifests
+      run: make manifests && git diff --exit-code
+
+    - name: Generate
+      run: make generate && git diff --exit-code
+
