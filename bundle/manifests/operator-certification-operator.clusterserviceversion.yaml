@@ -234,6 +234,6 @@ spec:
     name: jomkz
   maturity: alpha
   provider:
-    name: Redhat
+    name: Red Hat
     url: https://redhat.com
   version: 0.0.0-alpha
