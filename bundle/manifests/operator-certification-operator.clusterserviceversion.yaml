@@ -169,6 +169,7 @@ spec:
                 command:
                 - /manager
                 image: quay.io/opdev/operator-certification-operator:09f54622a8707ebc3e94aaef9a8781cf9bf6cc6d
+                imagePullPolicy: Always
                 livenessProbe:
                   httpGet:
                     path: /healthz
