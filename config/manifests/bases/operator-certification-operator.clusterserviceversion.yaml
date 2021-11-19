@@ -43,8 +43,8 @@ spec:
   - email: jomckenz@redhat.com
     name: jomkz
   maturity: alpha
+  minKubeVersion: 1.21.0
   provider:
     name: Redhat
     url: https://redhat.com
   version: 0.0.0
-  minKubeVersion: 1.21.0
