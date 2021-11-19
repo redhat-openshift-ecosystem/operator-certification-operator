@@ -11,13 +11,16 @@ metadata:
             "name": "operatorpipeline-sample"
           },
           "spec": {
+            "KubeconfigSecretName": "kubeconfig",
+            "gitHubSecretName": "github-api-token",
             "openShiftPipelineVersion": "v1.5.0",
-            "operatorPipelinesRelease": "main"
+            "operatorPipelinesRelease": "main",
+            "pyxisSecretName": "pyxis-api-secret"
           }
         }
       ]
     capabilities: Basic Install
-    operators.operatorframework.io/builder: operator-sdk-v1.13.0
+    operators.operatorframework.io/builder: operator-sdk-v1.14.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
   name: operator-certification-operator.v0.0.0-alpha
   namespace: placeholder
@@ -99,6 +102,19 @@ spec:
           - operators.coreos.com
           resources:
           - subscriptions
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - tekton.dev
+          resources:
+          - pipelines
+          - tasks
           verbs:
           - create
           - delete
@@ -233,6 +249,7 @@ spec:
   - email: jomckenz@redhat.com
     name: jomkz
   maturity: alpha
+  minKubeVersion: 1.21.0
   provider:
     name: Redhat
     url: https://redhat.com

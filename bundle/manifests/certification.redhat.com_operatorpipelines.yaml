@@ -34,6 +34,14 @@ spec:
           spec:
             description: OperatorPipelineSpec defines the desired state of OperatorPipeline
             properties:
+              gitHubSecretName:
+                description: GitHubSecretName is the name of the secret containing
+                  the GitHub Token that will be used by the pipeline.
+                type: string
+              kubeconfigSecretName:
+                description: KubeconfigSecretName is the name of the secret containing
+                  the kubeconfig that will be used by the pipeline.
+                type: string
               openShiftPipelineVersion:
                 description: OpenShiftPipelineVersion is the version of the OpenShift
                   Pipelines Operator to install.
@@ -41,6 +49,10 @@ spec:
               operatorPipelinesRelease:
                 description: OperatorPipelinesRelease is the Operator Pipelines release
                   (version) to install.
+                type: string
+              pyxisSecretName:
+                description: The name of the secret containing the pyxis api secret
+                  expected by the pipeline
                 type: string
             type: object
           status:
