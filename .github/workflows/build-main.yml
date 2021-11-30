@@ -38,10 +38,7 @@ jobs:
       uses: redhat-actions/buildah-build@v2
       with:
         image: ${{ env.IMAGE_REGISTRY }}/operator-certification-operator-bundle
-        tags: ${{ github.sha }} latest
-        build-args: |
-          quay_expiration=1w
-          release_tag=${{ env.RELEASE_TAG }}-alpha
+        tags: latest
         dockerfiles: |
           ./bundle.Dockerfile
 

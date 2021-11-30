@@ -5,8 +5,11 @@ IMAGE_BUILDER ?= podman
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION=$(shell git rev-parse HEAD)
+SHAVERSION=$(shell git rev-parse HEAD)
+VERSION="latest"
 RELEASE_TAG ?= "0.0.0"
+CHANNELS="alpha"
+DEFAULT_CHANNEL="alpha"
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -96,7 +99,7 @@ test: manifests generate fmt vet envtest ## Run tests.
 ##@ Build
 
 build: generate fmt vet ## Build manager binary.
-	go build -o bin/manager -ldflags "-X github.com/redhat-openshift-ecosystem/operator-certification-operator/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/operator-certification-operator/version.version=$(RELEASE_TAG)" main.go
+	go build -o bin/manager -ldflags "-X github.com/redhat-openshift-ecosystem/operator-certification-operator/version.commit=$(SHAVERSION) -X github.com/redhat-openshift-ecosystem/operator-certification-operator/version.version=$(RELEASE_TAG)" main.go
 
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
