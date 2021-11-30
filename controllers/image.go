@@ -31,14 +31,14 @@ const (
 )
 
 // reconcileCertifiedImageStream will ensure that the certified operator ImageStream is present and up to date.
-func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(meta metav1.ObjectMeta) error {
+func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(ctx context.Context, meta metav1.ObjectMeta) error {
 	key := types.NamespacedName{
 		Namespace: meta.Namespace,
 		Name:      certifiedIndex,
 	}
 
 	stream := newImageStream(key)
-	if IsObjectFound(r.Client, key, stream) {
+	if IsObjectFound(ctx, r.Client, key, stream) {
 		log.Info("existing certified image stream found")
 		return nil // Existing ImageStream found, do nothing...
 	}
@@ -59,18 +59,18 @@ func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(meta metav1.O
 	}
 
 	log.Info("creating new certified image stream import")
-	return r.Client.Create(context.TODO(), imgimport)
+	return r.Client.Create(ctx, imgimport)
 }
 
 // reconcileMarketplaceImageStream will ensure that the Red Hat Marketplace ImageStream is present and up to date.
-func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(meta metav1.ObjectMeta) error {
+func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(ctx context.Context, meta metav1.ObjectMeta) error {
 	key := types.NamespacedName{
 		Namespace: meta.Namespace,
 		Name:      marketplaceIndex,
 	}
 
 	stream := newImageStream(key)
-	if IsObjectFound(r.Client, key, stream) {
+	if IsObjectFound(ctx, r.Client, key, stream) {
 		log.Info("existing marketplace image stream found")
 		return nil // Existing ImageStream found, do nothing...
 	}
@@ -91,7 +91,7 @@ func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(meta metav1
 	}
 
 	log.Info("creating new marketplace image stream import")
-	return r.Client.Create(context.TODO(), imgimport)
+	return r.Client.Create(ctx, imgimport)
 }
 
 // newImageStream will create and return a new ImageStream instance using the given Name/Namespace.

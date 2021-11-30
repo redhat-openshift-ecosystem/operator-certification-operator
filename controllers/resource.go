@@ -27,44 +27,44 @@ import (
 
 // FetchObject will retrieve the object with the given namespace and name using the Kubernetes API.
 // The result will be stored in the given object.
-func FetchObject(client client.Client, key types.NamespacedName, obj client.Object) error {
-	return client.Get(context.TODO(), key, obj)
+func FetchObject(ctx context.Context, client client.Client, key types.NamespacedName, obj client.Object) error {
+	return client.Get(ctx, key, obj)
 }
 
 // IsObjectFound will perform a basic check that the given object exists via the Kubernetes API.
 // If an error occurs as part of the check, the function will return false.
-func IsObjectFound(client client.Client, key types.NamespacedName, obj client.Object) bool {
-	return !apierrors.IsNotFound(FetchObject(client, key, obj))
+func IsObjectFound(ctx context.Context, client client.Client, key types.NamespacedName, obj client.Object) bool {
+	return !apierrors.IsNotFound(FetchObject(ctx, client, key, obj))
 }
 
 // reconcileResources will ensure that all required resources are present and up to date.
-func (r *OperatorPipelineReconciler) reconcileResources(pipeline *certv1alpha1.OperatorPipeline) error {
+func (r *OperatorPipelineReconciler) reconcileResources(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) error {
 
-	if err := r.reconcilePipelineOperator(pipeline.ObjectMeta); err != nil {
+	if err := r.reconcilePipelineOperator(ctx, pipeline.ObjectMeta); err != nil {
 		return err
 	}
 
-	if err := r.reconcilePipelineDependencies(pipeline); err != nil {
+	if err := r.reconcilePipelineDependencies(ctx, pipeline); err != nil {
 		return err
 	}
 
-	if err := r.ensureKubeConfigSecret(pipeline.ObjectMeta); err != nil {
+	if err := r.ensureKubeConfigSecret(ctx, pipeline.ObjectMeta); err != nil {
 		return err
 	}
 
-	if err := r.ensureGitHubAPISecret(pipeline.ObjectMeta); err != nil {
+	if err := r.ensureGitHubAPISecret(ctx, pipeline.ObjectMeta); err != nil {
 		return err
 	}
 
-	if err := r.ensurePyxisAPISecret(pipeline.ObjectMeta); err != nil {
+	if err := r.ensurePyxisAPISecret(ctx, pipeline.ObjectMeta); err != nil {
 		return err
 	}
 
-	if err := r.reconcileCertifiedImageStream(pipeline.ObjectMeta); err != nil {
+	if err := r.reconcileCertifiedImageStream(ctx, pipeline.ObjectMeta); err != nil {
 		return err
 	}
 
-	if err := r.reconcileMarketplaceImageStream(pipeline.ObjectMeta); err != nil {
+	if err := r.reconcileMarketplaceImageStream(ctx, pipeline.ObjectMeta); err != nil {
 		return err
 	}
 

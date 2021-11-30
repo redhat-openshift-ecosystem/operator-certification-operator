@@ -37,8 +37,8 @@ const (
 )
 
 // ensureKubeConfigSecret will ensure that the kubeconfig Secret is present and up to date.
-func (r *OperatorPipelineReconciler) ensureKubeConfigSecret(meta metav1.ObjectMeta) error {
-	operatorPipeline, err := r.getPipeline(meta)
+func (r *OperatorPipelineReconciler) ensureKubeConfigSecret(ctx context.Context, meta metav1.ObjectMeta) error {
+	operatorPipeline, err := r.getPipeline(ctx, meta)
 	if err != nil {
 		log.Error(err, "unable to resolve kubeconfig secret for %s/%s", meta.Namespace, meta.Name)
 		return err
@@ -47,12 +47,12 @@ func (r *OperatorPipelineReconciler) ensureKubeConfigSecret(meta metav1.ObjectMe
 	if operatorPipeline.Spec.KubeconfigSecretName != "" {
 		secretName = operatorPipeline.Spec.KubeconfigSecretName
 	}
-	return r.ensureSecret(secretName, defaultKubeconfigSecretKeyName, meta)
+	return r.ensureSecret(ctx, secretName, defaultKubeconfigSecretKeyName, meta)
 }
 
 // ensureGitHubAPISecret will ensure that the GitHub API Secret is present and up to date.
-func (r *OperatorPipelineReconciler) ensureGitHubAPISecret(meta metav1.ObjectMeta) error {
-	operatorPipeline, err := r.getPipeline(meta)
+func (r *OperatorPipelineReconciler) ensureGitHubAPISecret(ctx context.Context, meta metav1.ObjectMeta) error {
+	operatorPipeline, err := r.getPipeline(ctx, meta)
 	if err != nil {
 		log.Error(err, "unable to resolve github secret for %s/%s", meta.Namespace, meta.Name)
 		return err
@@ -61,12 +61,12 @@ func (r *OperatorPipelineReconciler) ensureGitHubAPISecret(meta metav1.ObjectMet
 	if operatorPipeline.Spec.GitHubSecretName != "" {
 		secretName = operatorPipeline.Spec.GitHubSecretName
 	}
-	return r.ensureSecret(secretName, defaultGithubApiSecretKeyName, meta)
+	return r.ensureSecret(ctx, secretName, defaultGithubApiSecretKeyName, meta)
 }
 
 // ensurePyxisAPISecret will ensure that the Pyxis API Secret is present and up to date.
-func (r *OperatorPipelineReconciler) ensurePyxisAPISecret(meta metav1.ObjectMeta) error {
-	operatorPipeline, err := r.getPipeline(meta)
+func (r *OperatorPipelineReconciler) ensurePyxisAPISecret(ctx context.Context, meta metav1.ObjectMeta) error {
+	operatorPipeline, err := r.getPipeline(ctx, meta)
 	if err != nil {
 		log.Error(err, "unable to resolve pyxis secret for %s in %s", meta.Name, meta.Namespace)
 		return err
@@ -75,19 +75,19 @@ func (r *OperatorPipelineReconciler) ensurePyxisAPISecret(meta metav1.ObjectMeta
 	if operatorPipeline.Spec.PyxisSecretName != "" {
 		secretName = operatorPipeline.Spec.PyxisSecretName
 	}
-	return r.ensureSecret(secretName, defaultPyxisApiSecretKeyName, meta)
+	return r.ensureSecret(ctx, secretName, defaultPyxisApiSecretKeyName, meta)
 }
 
 // ensureSecret will ensure that the a secret with the appropriate name and key name are present
-func (r *OperatorPipelineReconciler) ensureSecret(secretName string, secretKeyName string, meta metav1.ObjectMeta) error {
+func (r *OperatorPipelineReconciler) ensureSecret(ctx context.Context, secretName string, secretKeyName string, meta metav1.ObjectMeta) error {
 	namespacedSecretName := newNamespacedName(secretName, meta.Namespace)
 	secret := &corev1.Secret{}
-	if !IsObjectFound(r.Client, namespacedSecretName, secret) {
+	if !IsObjectFound(ctx, r.Client, namespacedSecretName, secret) {
 		log.Error(ErrSecretNotFound, fmt.Sprintf("could not find existing secret %s/%s", meta.Namespace, secretName))
 		return ErrSecretNotFound
 	}
 	log.Info(fmt.Sprintf("found existing secret %s/%s", meta.Namespace, secretName))
-	err := r.Client.Get(context.TODO(), namespacedSecretName, secret)
+	err := r.Client.Get(ctx, namespacedSecretName, secret)
 	if err != nil {
 		log.Error(err, fmt.Sprintf("unable to get secret %s/%s", meta.Namespace, secretName))
 		return err
@@ -107,10 +107,10 @@ func (r *OperatorPipelineReconciler) ensureSecret(secretName string, secretKeyNa
 }
 
 // getPipeline retrieves a pipeline cr
-func (r *OperatorPipelineReconciler) getPipeline(meta metav1.ObjectMeta) (*certv1alpha1.OperatorPipeline, error) {
+func (r *OperatorPipelineReconciler) getPipeline(ctx context.Context, meta metav1.ObjectMeta) (*certv1alpha1.OperatorPipeline, error) {
 	pipelineName := newNamespacedName(meta.Name, meta.Namespace)
 	pipeline := &certv1alpha1.OperatorPipeline{}
-	err := r.Client.Get(context.TODO(), pipelineName, pipeline)
+	err := r.Client.Get(ctx, pipelineName, pipeline)
 	if err != nil {
 		if k8errors.IsNotFound(err) {
 			log.Info("pipeline resource not found. Ignoring since cr must be deleted")

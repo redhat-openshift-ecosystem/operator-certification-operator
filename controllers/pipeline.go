@@ -36,7 +36,7 @@ const (
 )
 
 // reconcilePipelineOperator will ensure that the resources are present to provision the OpenShift Pipeline Operator
-func (r *OperatorPipelineReconciler) reconcilePipelineOperator(meta metav1.ObjectMeta) error {
+func (r *OperatorPipelineReconciler) reconcilePipelineOperator(ctx context.Context, meta metav1.ObjectMeta) error {
 	log.Info("reconciling pipeline operator")
 
 	key := types.NamespacedName{
@@ -45,7 +45,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineOperator(meta metav1.Objec
 	}
 
 	sub := newSubscription(key)
-	if IsObjectFound(r.Client, key, sub) {
+	if IsObjectFound(ctx, r.Client, key, sub) {
 		log.Info("existing subscription found")
 		return nil // Existing Subscription found, do nothing...
 	}
@@ -60,7 +60,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineOperator(meta metav1.Objec
 	}
 
 	log.Info("creating new subscription")
-	return r.Client.Create(context.TODO(), sub)
+	return r.Client.Create(ctx, sub)
 }
 
 // newSubscription will create and return a new Subscription instance using the given Name/Namespace.

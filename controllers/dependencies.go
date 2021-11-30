@@ -22,7 +22,7 @@ const (
 	TASK_MANIFESTS_PATH     = "ansible/roles/operator-pipeline/templates/openshift/tasks"
 )
 
-func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(pipeline *certv1alpha1.OperatorPipeline) error {
+func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) error {
 
 	// Cloning operator-pipelines project to retrieve pipelines and tasks
 	// yaml manifests that need to be applied beforehand
@@ -56,12 +56,12 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(pipeline *cer
 
 				// apply pipeline yaml manifests
 				if path == PIPELINE_MANIFESTS_PATH {
-					if errs := r.applyPipelineManifests(filePath, pipeline); errs != nil {
+					if errs := r.applyPipelineManifests(ctx, filePath, pipeline); errs != nil {
 						return errs
 					}
 					// or apply tasks manifests
 				} else {
-					if errs := r.applyTaskManifests(filePath, pipeline); errs != nil {
+					if errs := r.applyTaskManifests(ctx, filePath, pipeline); errs != nil {
 						return errs
 					}
 				}
@@ -77,7 +77,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(pipeline *cer
 	return nil
 }
 
-func (r *OperatorPipelineReconciler) applyPipelineManifests(fileName string, obj metav1.Object) error {
+func (r *OperatorPipelineReconciler) applyPipelineManifests(ctx context.Context, fileName string, obj metav1.Object) error {
 
 	b, err := os.ReadFile(fileName)
 	if err != nil {
@@ -93,10 +93,10 @@ func (r *OperatorPipelineReconciler) applyPipelineManifests(fileName string, obj
 	}
 
 	pipeline.SetNamespace(obj.GetNamespace())
-	err = r.Get(context.Background(), types.NamespacedName{Name: pipeline.Name, Namespace: pipeline.Namespace}, pipeline)
+	err = r.Get(ctx, types.NamespacedName{Name: pipeline.Name, Namespace: pipeline.Namespace}, pipeline)
 
 	if len(pipeline.ObjectMeta.UID) > 0 {
-		if err := r.Client.Update(context.Background(), pipeline); err != nil {
+		if err := r.Client.Update(ctx, pipeline); err != nil {
 			log.Error(err, fmt.Sprintf("failed to update pipeline resource for file: %s", fileName))
 			return err
 		}
@@ -107,7 +107,7 @@ func (r *OperatorPipelineReconciler) applyPipelineManifests(fileName string, obj
 			return err
 		}
 		controllerutil.SetControllerReference(obj, pipeline, r.Scheme)
-		if err := r.Client.Create(context.Background(), pipeline); err != nil {
+		if err := r.Client.Create(ctx, pipeline); err != nil {
 			log.Error(err, fmt.Sprintf("failed to create pipeline resource for file: %s", fileName))
 			return err
 		}
@@ -116,7 +116,7 @@ func (r *OperatorPipelineReconciler) applyPipelineManifests(fileName string, obj
 	return nil
 }
 
-func (r *OperatorPipelineReconciler) applyTaskManifests(fileName string, obj metav1.Object) error {
+func (r *OperatorPipelineReconciler) applyTaskManifests(ctx context.Context, fileName string, obj metav1.Object) error {
 
 	b, err := os.ReadFile(fileName)
 	if err != nil {
@@ -132,10 +132,10 @@ func (r *OperatorPipelineReconciler) applyTaskManifests(fileName string, obj met
 	}
 
 	task.SetNamespace(obj.GetNamespace())
-	err = r.Get(context.Background(), types.NamespacedName{Name: task.Name, Namespace: task.Namespace}, task)
+	err = r.Get(ctx, types.NamespacedName{Name: task.Name, Namespace: task.Namespace}, task)
 
 	if len(task.ObjectMeta.UID) > 0 {
-		if err := r.Client.Update(context.Background(), task); err != nil {
+		if err := r.Client.Update(ctx, task); err != nil {
 			log.Error(err, fmt.Sprintf("failed to create task resource for file: %s", fileName))
 			return err
 		}
@@ -146,7 +146,7 @@ func (r *OperatorPipelineReconciler) applyTaskManifests(fileName string, obj met
 			return err
 		}
 		controllerutil.SetControllerReference(obj, task, r.Scheme)
-		if err := r.Client.Create(context.Background(), task); err != nil {
+		if err := r.Client.Create(ctx, task); err != nil {
 			log.Error(err, fmt.Sprintf("failed to update task resource for file: %s", fileName))
 			return err
 		}
