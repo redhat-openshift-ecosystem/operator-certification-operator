@@ -5,6 +5,6 @@ metadata:
 spec:
   openShiftPipelineVersion: v1.5.0
   operatorPipelinesRelease: main
-  KubeconfigSecretName: "kubeconfig"
+  kubeconfigSecretName: "kubeconfig"
   gitHubSecretName: "github-api-token"
   pyxisSecretName: "pyxis-api-secret"
