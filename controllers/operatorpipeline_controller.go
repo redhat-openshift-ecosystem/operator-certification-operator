@@ -65,7 +65,7 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	err = r.reconcileResources(pipeline)
+	err = r.reconcileResources(ctx, pipeline)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
