@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/opdev/operator-certification-operator
-  newTag: 09f54622a8707ebc3e94aaef9a8781cf9bf6cc6d
+  newTag: latest
