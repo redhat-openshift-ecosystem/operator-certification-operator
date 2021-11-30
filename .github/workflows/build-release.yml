@@ -33,8 +33,6 @@ jobs:
       with:
         image: ${{ env.IMAGE_REGISTRY }}/operator-certification-operator-bundle
         tags: ${{ env.RELEASE_TAG }}
-        build-args: |
-          release_tag=${{ env.RELEASE_TAG }}
         dockerfiles: |
           ./bundle.Dockerfile
 
