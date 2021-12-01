@@ -30,16 +30,17 @@ import (
 const (
 	defaultKubeconfigSecretName        = "kubeconfig"
 	defaultKubeconfigSecretKeyName     = "kubeconfig"
+	defaultDockerRegistrySecretName    = "registry-dockerconfig-secret"
+	defaultDockerRegistrySecretKeyName = "docker-username"
 	kubeConfigSecretAvailable          = "KubeConfigSecretAvailable"
 	defaultGithubApiSecretName         = "github-api-token"
 	defaultGithubApiSecretKeyName      = "GITHUB_TOKEN"
+	defaultGithubSSHSecretName         = "github-ssh-credentials"
+	defaultGithubSSHSecretKeyName      = "id_rsa"
 	gitHubSecretAvailable              = "GithubSecretAvailable"
 	defaultPyxisApiSecretName          = "pyxis-api-secret"
 	defaultPyxisApiSecretKeyName       = "pyxis_api_key"
-	defaultDockerRegistrySecretName    = "registry-dockerconfig-secret"
-	defaultDockerRegistrySecretKeyName = "docker-username"
-	defaultGithubSSHSecretName         = "github-ssh-credentials"
-	defaultGithubSSHSecretKeyName      = "id_rsa"
+	pyxisApiSecretAvailable            = "PyxisApiSecretAvailable"
 )
 
 // ensureKubeConfigSecret will ensure that the kubeconfig Secret is present and up to date.
@@ -123,13 +124,37 @@ func (r *OperatorPipelineReconciler) ensurePyxisAPISecret(ctx context.Context, m
 	operatorPipeline, err := r.getPipeline(ctx, meta)
 	if err != nil {
 		log.Error(err, "unable to resolve pyxis secret for %s in %s", meta.Name, meta.Namespace)
+		if err := r.updateStatusCondition(ctx, operatorPipeline, pyxisApiSecretAvailable, metav1.ConditionFalse, reconcileFailed,
+			err.Error()); err != nil {
+			return err
+		}
 		return err
 	}
+
+	if err = r.updateStatusCondition(ctx, operatorPipeline, pyxisApiSecretAvailable, metav1.ConditionUnknown, reconcileUnknown,
+		""); err != nil {
+		return err
+	}
+
 	secretName := defaultPyxisApiSecretName
 	if operatorPipeline.Spec.PyxisSecretName != "" {
 		secretName = operatorPipeline.Spec.PyxisSecretName
 	}
-	return r.ensureSecret(ctx, secretName, defaultPyxisApiSecretKeyName, meta)
+
+	if err = r.ensureSecret(ctx, secretName, defaultPyxisApiSecretKeyName, meta); err != nil {
+		if err := r.updateStatusCondition(ctx, operatorPipeline, pyxisApiSecretAvailable, metav1.ConditionFalse, reconcileFailed,
+			err.Error()); err != nil {
+			return err
+		}
+		return err
+	}
+
+	if err = r.updateStatusCondition(ctx, operatorPipeline, pyxisApiSecretAvailable, metav1.ConditionTrue, reconcileSucceeded,
+		""); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ensureDockerRegistrySecret will ensure that the Docker Registry Credentials Secret is present and up to date.
