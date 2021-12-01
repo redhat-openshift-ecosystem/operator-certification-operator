@@ -4,7 +4,7 @@ metadata:
   annotations:
     alm-examples: '[]'
     capabilities: Basic Install
-    operatorframework.io/suggested-namespace: oco
+    operatorframework.io/suggested-namespace: openshift-operators
     operators.operatorframework.io.bundle.channel.default.v1: alpha
     operators.operatorframework.io.bundle.channels: alpha
     repository: https://github.com/redhat-openshift-ecosystem/operator-certification-operator
@@ -27,16 +27,10 @@ spec:
     tkn, the Tekton CLI tool (tested with version 0.19.1)\n - [Install](https://git-scm.com/downloads)
     git, the Git CLI tool (tested with 2.32.0)\n - The certification pipeline expects
     you to have the source files of your Operator bundle\n \n# Pre - Installation\n
-    \n### Install Openshift pipelines operator\n * Log into your cluster's OpenShift
-    Console with cluster admin privileges\n * Use the left hand menu to navigate to
-    *Operators*\n * In the *Operators* submenu click on *OperatorHub*\n * Use the
-    Filter/Search box to filter on *OpenShift Pipelines*\n * Click the *Red Hat OpenShift
-    Pipelines* tile\n * In the flyout menu to the right click the *Install* button
-    near the top\n * On the next screen *Install Operator* scroll to the bottom of
-    the page and click *Install*\n \n### Add a new namespace where the following secrets
-    need to be applied\n ```\noc new-project oco\n ```\n \n### Add the kubeconfig
-    secret which will be used to deploy the operator under test and run the certification
-    checks.\n ```\n oc create secret generic kubeconfig --from-file=kubeconfig=$KUBECONFIG\n
+    \n### Change to the namespace where the following secrets need to be applied\n
+    ```\noc project openshift-operators\n ```\n \n### Add the kubeconfig secret which
+    will be used to deploy the operator under test and run the certification checks.\n
+    ```\n oc create secret generic kubeconfig --from-file=kubeconfig=$KUBECONFIG\n
     ```\n \n### Configuring steps for submitting the results\n - Add the github API
     token to the repo where the PR will be created\n ```\n oc create secret generic
     github-api-token --from-literal GITHUB_TOKEN=<github token>\n ```\n - Add RedHat
@@ -54,13 +48,13 @@ spec:
       deployments: null
     strategy: ""
   installModes:
-  - supported: true
+  - supported: false
     type: OwnNamespace
   - supported: false
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
-  - supported: false
+  - supported: true
     type: AllNamespaces
   keywords:
   - certification

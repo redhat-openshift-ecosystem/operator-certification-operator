@@ -48,10 +48,6 @@ const (
 // reconcileResources will ensure that all required resources are present and up to date.
 func (r *OperatorPipelineReconciler) reconcileResources(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) error {
 
-	if err := r.reconcilePipelineOperator(ctx, pipeline.ObjectMeta); err != nil {
-		return err
-	}
-
 	if err := r.reconcilePipelineDependencies(ctx, pipeline); err != nil {
 		return err
 	}
