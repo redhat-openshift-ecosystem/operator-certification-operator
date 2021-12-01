@@ -42,10 +42,6 @@ spec:
                 description: KubeconfigSecretName is the name of the secret containing
                   the kubeconfig that will be used by the pipeline.
                 type: string
-              openShiftPipelineVersion:
-                description: OpenShiftPipelineVersion is the version of the OpenShift
-                  Pipelines Operator to install.
-                type: string
               operatorPipelinesRelease:
                 description: OperatorPipelinesRelease is the Operator Pipelines release
                   (version) to install.

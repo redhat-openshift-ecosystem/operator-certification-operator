@@ -25,9 +25,6 @@ import (
 
 // OperatorPipelineSpec defines the desired state of OperatorPipeline
 type OperatorPipelineSpec struct {
-	// OpenShiftPipelineVersion is the version of the OpenShift Pipelines Operator to install.
-	OpenShiftPipelineVersion string `json:"openShiftPipelineVersion,omitempty"`
-
 	// OperatorPipelinesRelease is the Operator Pipelines release (version) to install.
 	OperatorPipelinesRelease string `json:"operatorPipelinesRelease,omitempty"`
 
