@@ -34,9 +34,17 @@ spec:
           spec:
             description: OperatorPipelineSpec defines the desired state of OperatorPipeline
             properties:
+              dockerRegistrySecretName:
+                description: The name of the secret containing the docker registry
+                  credentials secret expected by the pipeline
+                type: string
               gitHubSecretName:
                 description: GitHubSecretName is the name of the secret containing
                   the GitHub Token that will be used by the pipeline.
+                type: string
+              githubSSHSecretName:
+                description: The name of the secret containing the github ssh secret
+                  expected by the pipeline
                 type: string
               kubeconfigSecretName:
                 description: KubeconfigSecretName is the name of the secret containing
