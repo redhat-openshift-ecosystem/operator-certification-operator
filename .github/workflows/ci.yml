@@ -19,12 +19,12 @@ jobs:
 
     - run: sudo rm -rf /usr/local/bin/kustomize
 
-    - name: Test
-      run: make test
+    - name: Generate
+      run: make generate && git diff --exit-code
 
     - name: Manifests
       run: make manifests && git diff --exit-code
 
-    - name: Generate
-      run: make generate && git diff --exit-code
+    - name: Test
+      run: make test
 
