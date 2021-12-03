@@ -21,6 +21,8 @@ import (
 
 	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -36,6 +38,12 @@ func FetchObject(ctx context.Context, client client.Client, key types.Namespaced
 func IsObjectFound(ctx context.Context, client client.Client, key types.NamespacedName, obj client.Object) bool {
 	return !apierrors.IsNotFound(FetchObject(ctx, client, key, obj))
 }
+
+const (
+	reconcileSucceeded = "ReconcileSucceeded"
+	reconcileFailed    = "ReconcileFailed"
+	reconcileUnknown   = "ReconcileUnknown"
+)
 
 // reconcileResources will ensure that all required resources are present and up to date.
 func (r *OperatorPipelineReconciler) reconcileResources(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) error {
@@ -65,6 +73,30 @@ func (r *OperatorPipelineReconciler) reconcileResources(ctx context.Context, pip
 	}
 
 	if err := r.reconcileMarketplaceImageStream(ctx, pipeline.ObjectMeta); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// updateStatusCondition updates the status/reason/message for each condition for which we reconcile
+func (r *OperatorPipelineReconciler) updateStatusCondition(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline,
+	conditionType string, status metav1.ConditionStatus, reason, message string) error {
+	// checking to see if a given condition type is present, since on each reconcile we do not want to set condition
+	// to "Unknown" unless that conditionType has not previously been set to "True" or "False"
+	if (meta.IsStatusConditionPresentAndEqual(pipeline.Status.Conditions, conditionType, metav1.ConditionTrue) ||
+		meta.IsStatusConditionPresentAndEqual(pipeline.Status.Conditions, conditionType, metav1.ConditionFalse)) && status == metav1.ConditionUnknown {
+		return nil
+	}
+
+	meta.SetStatusCondition(&pipeline.Status.Conditions, metav1.Condition{
+		Type:    conditionType,
+		Status:  status,
+		Reason:  reason,
+		Message: message,
+	})
+
+	if err := r.Client.Status().Update(ctx, pipeline); err != nil {
 		return err
 	}
 
