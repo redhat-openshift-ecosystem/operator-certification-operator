@@ -10,6 +10,7 @@ import (
 	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -17,7 +18,8 @@ import (
 )
 
 const (
-	operatorPipelinesRepo = "https://github.com/redhat-openshift-ecosystem/operator-pipelines.git"
+	operatorPipelinesRepo         = "https://github.com/redhat-openshift-ecosystem/operator-pipelines.git"
+	pipelineDependenciesAvailable = "PipelineDependenciesAvailable"
 )
 
 var (
@@ -31,6 +33,11 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.C
 	// yaml manifests that need to be applied beforehand
 	// ref: https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#step-6---install-the-certification-pipeline-and-dependencies-into-the-cluster
 
+	if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionUnknown, reconcileUnknown,
+		""); err != nil {
+		return err
+	}
+
 	// creating a tmp director so that each reconcile gets a new directory in case the defer does not execute properly
 	tmpRepoClonePath, _ := os.MkdirTemp("", "operator-pipelines-*")
 
@@ -42,6 +49,10 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.C
 
 	if err != nil {
 		log.Error(err, "Couldn't clone the repository for operator-pipelines")
+		if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed,
+			err.Error()); err != nil {
+			return err
+		}
 		return err
 	}
 
@@ -58,10 +69,18 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.C
 				switch path {
 				case pipelineManifestsPath:
 					if err := r.applyManifests(ctx, filePath, pipeline, new(tekton.Pipeline)); err != nil {
+						if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed,
+							err.Error()); err != nil {
+							return err
+						}
 						return err
 					}
 				case taskManifestsPath:
 					if err := r.applyManifests(ctx, filePath, pipeline, new(tekton.Task)); err != nil {
+						if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed,
+							err.Error()); err != nil {
+							return err
+						}
 						return err
 					}
 				default:
@@ -72,8 +91,17 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.C
 		})
 		if err != nil {
 			log.Error(err, "Couldn't iterate over operator-pipelines yaml manifest files")
+			if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed,
+				err.Error()); err != nil {
+				return err
+			}
 			return err
 		}
+	}
+
+	if err = r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionTrue, reconcileSucceeded,
+		""); err != nil {
+		return err
 	}
 
 	return nil
