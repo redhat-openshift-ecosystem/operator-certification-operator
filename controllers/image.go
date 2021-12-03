@@ -20,20 +20,28 @@ import (
 	"context"
 
 	imagev1 "github.com/openshift/api/image/v1"
+	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
 const (
-	certifiedIndex   = "certified-operator-index"
-	marketplaceIndex = "redhat-marketplace-index"
+	certifiedIndex                  = "certified-operator-index"
+	certifiedImageStreamAvailable   = "CertifiedImageStreamAvailable"
+	marketplaceIndex                = "redhat-marketplace-index"
+	marketplaceImageStreamAvailable = "MarketplaceImageStreamAvailable"
 )
 
 // reconcileCertifiedImageStream will ensure that the certified operator ImageStream is present and up to date.
-func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(ctx context.Context, meta metav1.ObjectMeta) error {
+func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) error {
+	if err := r.updateStatusCondition(ctx, pipeline, certifiedImageStreamAvailable, metav1.ConditionUnknown, reconcileUnknown,
+		""); err != nil {
+		return err
+	}
+
 	key := types.NamespacedName{
-		Namespace: meta.Namespace,
+		Namespace: pipeline.Namespace,
 		Name:      certifiedIndex,
 	}
 
@@ -43,9 +51,9 @@ func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(ctx context.C
 		return nil // Existing ImageStream found, do nothing...
 	}
 
-	imgimport := newImageStreamImport(key)
-	imgimport.Spec.Import = true
-	imgimport.Spec.Repository = &imagev1.RepositoryImportSpec{
+	imgImport := newImageStreamImport(key)
+	imgImport.Spec.Import = true
+	imgImport.Spec.Repository = &imagev1.RepositoryImportSpec{
 		From: corev1.ObjectReference{
 			Kind: "DockerImage",
 			Name: "registry.redhat.io/redhat/certified-operator-index",
@@ -59,13 +67,31 @@ func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(ctx context.C
 	}
 
 	log.Info("creating new certified image stream import")
-	return r.Client.Create(ctx, imgimport)
+	if err := r.Client.Create(ctx, imgImport); err != nil {
+		if err := r.updateStatusCondition(ctx, pipeline, certifiedImageStreamAvailable, metav1.ConditionFalse, reconcileFailed,
+			err.Error()); err != nil {
+			return err
+		}
+		return err
+	}
+
+	if err := r.updateStatusCondition(ctx, pipeline, certifiedImageStreamAvailable, metav1.ConditionTrue, reconcileSucceeded,
+		""); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // reconcileMarketplaceImageStream will ensure that the Red Hat Marketplace ImageStream is present and up to date.
-func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(ctx context.Context, meta metav1.ObjectMeta) error {
+func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) error {
+	if err := r.updateStatusCondition(ctx, pipeline, marketplaceImageStreamAvailable, metav1.ConditionUnknown, reconcileUnknown,
+		""); err != nil {
+		return err
+	}
+
 	key := types.NamespacedName{
-		Namespace: meta.Namespace,
+		Namespace: pipeline.Namespace,
 		Name:      marketplaceIndex,
 	}
 
@@ -75,9 +101,9 @@ func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(ctx context
 		return nil // Existing ImageStream found, do nothing...
 	}
 
-	imgimport := newImageStreamImport(key)
-	imgimport.Spec.Import = true
-	imgimport.Spec.Repository = &imagev1.RepositoryImportSpec{
+	imgImport := newImageStreamImport(key)
+	imgImport.Spec.Import = true
+	imgImport.Spec.Repository = &imagev1.RepositoryImportSpec{
 		From: corev1.ObjectReference{
 			Kind: "DockerImage",
 			Name: "registry.redhat.io/redhat/redhat-marketplace-index",
@@ -91,7 +117,20 @@ func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(ctx context
 	}
 
 	log.Info("creating new marketplace image stream import")
-	return r.Client.Create(ctx, imgimport)
+	if err := r.Client.Create(ctx, imgImport); err != nil {
+		if err := r.updateStatusCondition(ctx, pipeline, marketplaceImageStreamAvailable, metav1.ConditionFalse, reconcileFailed,
+			err.Error()); err != nil {
+			return err
+		}
+		return err
+	}
+
+	if err := r.updateStatusCondition(ctx, pipeline, marketplaceImageStreamAvailable, metav1.ConditionTrue, reconcileSucceeded,
+		""); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // newImageStream will create and return a new ImageStream instance using the given Name/Namespace.

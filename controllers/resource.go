@@ -72,11 +72,11 @@ func (r *OperatorPipelineReconciler) reconcileResources(ctx context.Context, pip
 		log.Info("Github SSH Secret not present or correct. Create it to enable digest pinning.")
 	}
 
-	if err := r.reconcileCertifiedImageStream(ctx, pipeline.ObjectMeta); err != nil {
+	if err := r.reconcileCertifiedImageStream(ctx, pipeline); err != nil {
 		return err
 	}
 
-	if err := r.reconcileMarketplaceImageStream(ctx, pipeline.ObjectMeta); err != nil {
+	if err := r.reconcileMarketplaceImageStream(ctx, pipeline); err != nil {
 		return err
 	}
 
