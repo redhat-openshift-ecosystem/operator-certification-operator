@@ -30,11 +30,12 @@ import (
 const (
 	defaultKubeconfigSecretName    = "kubeconfig"
 	defaultKubeconfigSecretKeyName = "kubeconfig"
+	kubeConfigSecretAvailable      = "KubeConfigSecretAvailable"
 	defaultGithubApiSecretName     = "github-api-token"
 	defaultGithubApiSecretKeyName  = "GITHUB_TOKEN"
+	gitHubSecretAvailable          = "GithubSecretAvailable"
 	defaultPyxisApiSecretName      = "pyxis-api-secret"
 	defaultPyxisApiSecretKeyName   = "pyxis_api_key"
-	gitHubSecretAvailable          = "GithubSecretAvailable"
 )
 
 // ensureKubeConfigSecret will ensure that the kubeconfig Secret is present and up to date.
@@ -42,13 +43,37 @@ func (r *OperatorPipelineReconciler) ensureKubeConfigSecret(ctx context.Context,
 	operatorPipeline, err := r.getPipeline(ctx, meta)
 	if err != nil {
 		log.Error(err, "unable to resolve kubeconfig secret for %s/%s", meta.Namespace, meta.Name)
+		if err := r.updateStatusCondition(ctx, operatorPipeline, kubeConfigSecretAvailable, metav1.ConditionFalse, reconcileFailed,
+			err.Error()); err != nil {
+			return err
+		}
 		return err
 	}
+
+	if err = r.updateStatusCondition(ctx, operatorPipeline, kubeConfigSecretAvailable, metav1.ConditionUnknown, reconcileUnknown,
+		""); err != nil {
+		return err
+	}
+
 	secretName := defaultKubeconfigSecretName
 	if operatorPipeline.Spec.KubeconfigSecretName != "" {
 		secretName = operatorPipeline.Spec.KubeconfigSecretName
 	}
-	return r.ensureSecret(ctx, secretName, defaultKubeconfigSecretKeyName, meta)
+
+	if err = r.ensureSecret(ctx, secretName, defaultKubeconfigSecretKeyName, meta); err != nil {
+		if err := r.updateStatusCondition(ctx, operatorPipeline, kubeConfigSecretAvailable, metav1.ConditionFalse, reconcileFailed,
+			err.Error()); err != nil {
+			return err
+		}
+		return err
+	}
+
+	if err = r.updateStatusCondition(ctx, operatorPipeline, kubeConfigSecretAvailable, metav1.ConditionTrue, reconcileSucceeded,
+		""); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ensureGitHubAPISecret will ensure that the GitHub API Secret is present and up to date.
