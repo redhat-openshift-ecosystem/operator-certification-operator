@@ -20,7 +20,6 @@ import (
 	"context"
 
 	imagev1 "github.com/openshift/api/image/v1"
-	operatorsv1a1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -45,7 +44,6 @@ type OperatorPipelineReconciler struct {
 //+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=image.openshift.io,resources=imagestreams,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=image.openshift.io,resources=imagestreamimports,verbs=create
-//+kubebuilder:rbac:groups=operators.coreos.com,resources=subscriptions,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=tekton.dev,resources=pipelines;tasks,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -79,7 +77,6 @@ func (r *OperatorPipelineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&certv1alpha1.OperatorPipeline{}).
 		Owns(&corev1.Secret{}).
 		Owns(&imagev1.ImageStream{}).
-		Owns(&operatorsv1a1.Subscription{}).
 		Owns(&tekton.Pipeline{}).
 		Owns(&tekton.Task{}).
 		Complete(r)
