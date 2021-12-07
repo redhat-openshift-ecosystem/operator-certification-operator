@@ -40,6 +40,12 @@ type OperatorPipelineSpec struct {
 
 	// The name of the secret containing the pyxis api secret expected by the pipeline
 	PyxisSecretName string `json:"pyxisSecretName,omitempty"`
+
+	// The name of the secret containing the docker registry credentials secret expected by the pipeline
+	DockerRegistrySecretName string `json:"dockerRegistrySecretName,omitempty"`
+
+	// The name of the secret containing the github ssh secret expected by the pipeline
+	GithubSSHSecretName string `json:"githubSSHSecretName,omitempty"`
 }
 
 // OperatorPipelineStatus defines the observed state of OperatorPipeline

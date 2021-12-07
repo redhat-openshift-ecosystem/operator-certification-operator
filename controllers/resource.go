@@ -68,6 +68,14 @@ func (r *OperatorPipelineReconciler) reconcileResources(ctx context.Context, pip
 		return err
 	}
 
+	if err := r.ensureDockerRegistrySecret(ctx, pipeline.ObjectMeta); err != nil {
+		log.Info("Docker Registry Secret not present or correct. Create it to use a private repository.")
+	}
+
+	if err := r.ensureGithubSSHSecret(ctx, pipeline.ObjectMeta); err != nil {
+		log.Info("Github SSH Secret not present or correct. Create it to enable digest pinning.")
+	}
+
 	if err := r.reconcileCertifiedImageStream(ctx, pipeline.ObjectMeta); err != nil {
 		return err
 	}

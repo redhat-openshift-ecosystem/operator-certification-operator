@@ -28,14 +28,18 @@ import (
 )
 
 const (
-	defaultKubeconfigSecretName    = "kubeconfig"
-	defaultKubeconfigSecretKeyName = "kubeconfig"
-	kubeConfigSecretAvailable      = "KubeConfigSecretAvailable"
-	defaultGithubApiSecretName     = "github-api-token"
-	defaultGithubApiSecretKeyName  = "GITHUB_TOKEN"
-	gitHubSecretAvailable          = "GithubSecretAvailable"
-	defaultPyxisApiSecretName      = "pyxis-api-secret"
-	defaultPyxisApiSecretKeyName   = "pyxis_api_key"
+	defaultKubeconfigSecretName        = "kubeconfig"
+	defaultKubeconfigSecretKeyName     = "kubeconfig"
+	kubeConfigSecretAvailable          = "KubeConfigSecretAvailable"
+	defaultGithubApiSecretName         = "github-api-token"
+	defaultGithubApiSecretKeyName      = "GITHUB_TOKEN"
+	gitHubSecretAvailable              = "GithubSecretAvailable"
+	defaultPyxisApiSecretName          = "pyxis-api-secret"
+	defaultPyxisApiSecretKeyName       = "pyxis_api_key"
+	defaultDockerRegistrySecretName    = "registry-dockerconfig-secret"
+	defaultDockerRegistrySecretKeyName = "docker-username"
+	defaultGithubSSHSecretName         = "github-ssh-credentials"
+	defaultGithubSSHSecretKeyName      = "id_rsa"
 )
 
 // ensureKubeConfigSecret will ensure that the kubeconfig Secret is present and up to date.
@@ -126,6 +130,34 @@ func (r *OperatorPipelineReconciler) ensurePyxisAPISecret(ctx context.Context, m
 		secretName = operatorPipeline.Spec.PyxisSecretName
 	}
 	return r.ensureSecret(ctx, secretName, defaultPyxisApiSecretKeyName, meta)
+}
+
+// ensureDockerRegistrySecret will ensure that the Docker Registry Credentials Secret is present and up to date.
+func (r *OperatorPipelineReconciler) ensureDockerRegistrySecret(ctx context.Context, meta metav1.ObjectMeta) error {
+	operatorPipeline, err := r.getPipeline(ctx, meta)
+	if err != nil {
+		log.Error(err, "unable to resolve docker registry credentials secret for %s in %s", meta.Name, meta.Namespace)
+		return err
+	}
+	secretName := defaultDockerRegistrySecretName
+	if operatorPipeline.Spec.DockerRegistrySecretName != "" {
+		secretName = operatorPipeline.Spec.DockerRegistrySecretName
+	}
+	return r.ensureSecret(ctx, secretName, defaultDockerRegistrySecretKeyName, meta)
+}
+
+// ensureGithubSSHSecret will ensure that the Github SSH Secret is present and up to date.
+func (r *OperatorPipelineReconciler) ensureGithubSSHSecret(ctx context.Context, meta metav1.ObjectMeta) error {
+	operatorPipeline, err := r.getPipeline(ctx, meta)
+	if err != nil {
+		log.Error(err, "unable to resolve github ssh secret for %s in %s", meta.Name, meta.Namespace)
+		return err
+	}
+	secretName := defaultGithubSSHSecretName
+	if operatorPipeline.Spec.GithubSSHSecretName != "" {
+		secretName = operatorPipeline.Spec.GithubSSHSecretName
+	}
+	return r.ensureSecret(ctx, secretName, defaultGithubSSHSecretKeyName, meta)
 }
 
 // ensureSecret will ensure that the a secret with the appropriate name and key name are present
