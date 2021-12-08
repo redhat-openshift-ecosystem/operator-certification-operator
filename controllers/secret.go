@@ -30,12 +30,10 @@ import (
 const (
 	defaultKubeconfigSecretName        = "kubeconfig"
 	defaultKubeconfigSecretKeyName     = "kubeconfig"
-	defaultDockerRegistrySecretName    = "registry-dockerconfig-secret"
-	defaultDockerRegistrySecretKeyName = "docker-username"
+	defaultDockerRegistrySecretKeyName = ".dockerconfigjson"
 	kubeConfigSecretAvailable          = "KubeConfigSecretAvailable"
 	defaultGithubApiSecretName         = "github-api-token"
 	defaultGithubApiSecretKeyName      = "GITHUB_TOKEN"
-	defaultGithubSSHSecretName         = "github-ssh-credentials"
 	defaultGithubSSHSecretKeyName      = "id_rsa"
 	gitHubSecretAvailable              = "GithubSecretAvailable"
 	defaultPyxisApiSecretName          = "pyxis-api-secret"
@@ -164,11 +162,14 @@ func (r *OperatorPipelineReconciler) ensureDockerRegistrySecret(ctx context.Cont
 		log.Error(err, "unable to resolve docker registry credentials secret for %s in %s", meta.Name, meta.Namespace)
 		return err
 	}
-	secretName := defaultDockerRegistrySecretName
+
 	if operatorPipeline.Spec.DockerRegistrySecretName != "" {
-		secretName = operatorPipeline.Spec.DockerRegistrySecretName
+		if err := r.ensureSecret(ctx, operatorPipeline.Spec.DockerRegistrySecretName, defaultDockerRegistrySecretKeyName, meta); err != nil {
+			return err
+		}
 	}
-	return r.ensureSecret(ctx, secretName, defaultDockerRegistrySecretKeyName, meta)
+
+	return nil
 }
 
 // ensureGithubSSHSecret will ensure that the Github SSH Secret is present and up to date.
@@ -178,11 +179,14 @@ func (r *OperatorPipelineReconciler) ensureGithubSSHSecret(ctx context.Context, 
 		log.Error(err, "unable to resolve github ssh secret for %s in %s", meta.Name, meta.Namespace)
 		return err
 	}
-	secretName := defaultGithubSSHSecretName
+
 	if operatorPipeline.Spec.GithubSSHSecretName != "" {
-		secretName = operatorPipeline.Spec.GithubSSHSecretName
+		if err := r.ensureSecret(ctx, operatorPipeline.Spec.GithubSSHSecretName, defaultGithubSSHSecretKeyName, meta); err != nil {
+			return err
+		}
 	}
-	return r.ensureSecret(ctx, secretName, defaultGithubSSHSecretKeyName, meta)
+
+	return nil
 }
 
 // ensureSecret will ensure that the a secret with the appropriate name and key name are present
