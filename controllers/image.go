@@ -48,6 +48,10 @@ func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(ctx context.C
 	stream := newImageStream(key)
 	if IsObjectFound(ctx, r.Client, key, stream) {
 		log.Info("existing certified image stream found")
+		if err := r.updateStatusCondition(ctx, pipeline, certifiedImageStreamAvailable, metav1.ConditionTrue, reconcileSucceeded,
+			""); err != nil {
+			return err
+		}
 		return nil // Existing ImageStream found, do nothing...
 	}
 
@@ -98,6 +102,10 @@ func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(ctx context
 	stream := newImageStream(key)
 	if IsObjectFound(ctx, r.Client, key, stream) {
 		log.Info("existing marketplace image stream found")
+		if err := r.updateStatusCondition(ctx, pipeline, marketplaceImageStreamAvailable, metav1.ConditionTrue, reconcileSucceeded,
+			""); err != nil {
+			return err
+		}
 		return nil // Existing ImageStream found, do nothing...
 	}
 
