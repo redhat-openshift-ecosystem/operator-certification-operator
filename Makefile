@@ -102,7 +102,7 @@ test: manifests generate fmt vet envtest ## Run tests.
 ##@ Build
 
 build: generate fmt vet ## Build manager binary.
-	go build -o bin/manager -ldflags "-X github.com/redhat-openshift-ecosystem/operator-certification-operator/version.commit=$(SHAVERSION) -X github.com/redhat-openshift-ecosystem/operator-certification-operator/version.version=$(RELEASE_TAG)" main.go
+	go build -a -o bin/manager -ldflags "-X github.com/redhat-openshift-ecosystem/operator-certification-operator/version.commit=$(SHAVERSION) -X github.com/redhat-openshift-ecosystem/operator-certification-operator/version.version=$(RELEASE_TAG)" main.go
 
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
