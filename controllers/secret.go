@@ -193,17 +193,11 @@ func (r *OperatorPipelineReconciler) ensureGithubSSHSecret(ctx context.Context, 
 func (r *OperatorPipelineReconciler) ensureSecret(ctx context.Context, secretName string, secretKeyName string, meta metav1.ObjectMeta) error {
 	namespacedSecretName := newNamespacedName(secretName, meta.Namespace)
 	secret := &corev1.Secret{}
-	if !IsObjectFound(ctx, r.Client, namespacedSecretName, secret) {
+	if !isObjectFound(ctx, r.Client, namespacedSecretName, secret) {
 		log.Error(ErrSecretNotFound, fmt.Sprintf("could not find existing secret %s/%s", meta.Namespace, secretName))
 		return ErrSecretNotFound
 	}
 	log.Info(fmt.Sprintf("found existing secret %s/%s", meta.Namespace, secretName))
-	err := r.Client.Get(ctx, namespacedSecretName, secret)
-	if err != nil {
-		log.Error(err, fmt.Sprintf("unable to get secret %s/%s", meta.Namespace, secretName))
-		return err
-	}
-	log.Info(fmt.Sprintf("successfully fetched secret %s/%s", meta.Namespace, secretName))
 	if value, ok := secret.Data[secretKeyName]; ok {
 		if len(value) == 0 {
 			log.Error(ErrInvalidSecret, fmt.Sprintf("the %s secret does not contain a valid value at key %s", secretName, secretKeyName))
