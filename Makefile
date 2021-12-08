@@ -10,6 +10,9 @@ VERSION="latest"
 RELEASE_TAG ?= "0.0.0"
 CHANNELS="alpha"
 DEFAULT_CHANNEL="alpha"
+IMAGE_REGISTRY ?= "quay.io"
+IMAGE_REPO ?= "opdev"
+IMAGE_NAME ?= "operator-certification-operator"
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -35,7 +38,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # redhat.com/operator-certification-operator-bundle:$VERSION and redhat.com/operator-certification-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= quay.io/opdev/operator-certification-operator
+IMAGE_TAG_BASE ?= $(IMAGE_REGISTRY)/$(IMAGE_REPO)/$(IMAGE_NAME)
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
