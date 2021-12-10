@@ -46,15 +46,13 @@ func (r *OperatorPipelineReconciler) ensureKubeConfigSecret(ctx context.Context,
 	operatorPipeline, err := r.getPipeline(ctx, meta)
 	if err != nil {
 		log.Error(err, "unable to resolve kubeconfig secret for %s/%s", meta.Namespace, meta.Name)
-		if err := r.updateStatusCondition(ctx, operatorPipeline, kubeConfigSecretAvailable, metav1.ConditionFalse, reconcileFailed,
-			err.Error()); err != nil {
+		if err := r.updateStatusCondition(ctx, operatorPipeline, kubeConfigSecretAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 			return err
 		}
 		return err
 	}
 
-	if err = r.updateStatusCondition(ctx, operatorPipeline, kubeConfigSecretAvailable, metav1.ConditionUnknown, reconcileUnknown,
-		""); err != nil {
+	if err = r.updateStatusCondition(ctx, operatorPipeline, kubeConfigSecretAvailable, metav1.ConditionUnknown, reconcileUnknown, ""); err != nil {
 		return err
 	}
 
@@ -64,15 +62,13 @@ func (r *OperatorPipelineReconciler) ensureKubeConfigSecret(ctx context.Context,
 	}
 
 	if err = r.ensureSecret(ctx, secretName, defaultKubeconfigSecretKeyName, meta); err != nil {
-		if err := r.updateStatusCondition(ctx, operatorPipeline, kubeConfigSecretAvailable, metav1.ConditionFalse, reconcileFailed,
-			err.Error()); err != nil {
+		if err := r.updateStatusCondition(ctx, operatorPipeline, kubeConfigSecretAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 			return err
 		}
 		return err
 	}
 
-	if err = r.updateStatusCondition(ctx, operatorPipeline, kubeConfigSecretAvailable, metav1.ConditionTrue, reconcileSucceeded,
-		""); err != nil {
+	if err = r.updateStatusCondition(ctx, operatorPipeline, kubeConfigSecretAvailable, metav1.ConditionTrue, reconcileSucceeded, ""); err != nil {
 		return err
 	}
 
@@ -84,15 +80,13 @@ func (r *OperatorPipelineReconciler) ensureGitHubAPISecret(ctx context.Context, 
 	operatorPipeline, err := r.getPipeline(ctx, meta)
 	if err != nil {
 		log.Error(err, "unable to resolve github secret for %s/%s", meta.Namespace, meta.Name)
-		if err := r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionFalse, reconcileFailed,
-			err.Error()); err != nil {
+		if err := r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 			return err
 		}
 		return err
 	}
 
-	if err = r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionUnknown, reconcileUnknown,
-		""); err != nil {
+	if err = r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionUnknown, reconcileUnknown, ""); err != nil {
 		return err
 	}
 
@@ -102,15 +96,13 @@ func (r *OperatorPipelineReconciler) ensureGitHubAPISecret(ctx context.Context, 
 	}
 
 	if err = r.ensureSecret(ctx, secretName, defaultGithubApiSecretKeyName, meta); err != nil {
-		if err := r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionFalse, reconcileFailed,
-			err.Error()); err != nil {
+		if err := r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 			return err
 		}
 		return err
 	}
 
-	if err = r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionTrue, reconcileSucceeded,
-		""); err != nil {
+	if err = r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionTrue, reconcileSucceeded, ""); err != nil {
 		return err
 	}
 
@@ -122,15 +114,13 @@ func (r *OperatorPipelineReconciler) ensurePyxisAPISecret(ctx context.Context, m
 	operatorPipeline, err := r.getPipeline(ctx, meta)
 	if err != nil {
 		log.Error(err, "unable to resolve pyxis secret for %s in %s", meta.Name, meta.Namespace)
-		if err := r.updateStatusCondition(ctx, operatorPipeline, pyxisApiSecretAvailable, metav1.ConditionFalse, reconcileFailed,
-			err.Error()); err != nil {
+		if err := r.updateStatusCondition(ctx, operatorPipeline, pyxisApiSecretAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 			return err
 		}
 		return err
 	}
 
-	if err = r.updateStatusCondition(ctx, operatorPipeline, pyxisApiSecretAvailable, metav1.ConditionUnknown, reconcileUnknown,
-		""); err != nil {
+	if err = r.updateStatusCondition(ctx, operatorPipeline, pyxisApiSecretAvailable, metav1.ConditionUnknown, reconcileUnknown, ""); err != nil {
 		return err
 	}
 
@@ -140,15 +130,13 @@ func (r *OperatorPipelineReconciler) ensurePyxisAPISecret(ctx context.Context, m
 	}
 
 	if err = r.ensureSecret(ctx, secretName, defaultPyxisApiSecretKeyName, meta); err != nil {
-		if err := r.updateStatusCondition(ctx, operatorPipeline, pyxisApiSecretAvailable, metav1.ConditionFalse, reconcileFailed,
-			err.Error()); err != nil {
+		if err := r.updateStatusCondition(ctx, operatorPipeline, pyxisApiSecretAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 			return err
 		}
 		return err
 	}
 
-	if err = r.updateStatusCondition(ctx, operatorPipeline, pyxisApiSecretAvailable, metav1.ConditionTrue, reconcileSucceeded,
-		""); err != nil {
+	if err = r.updateStatusCondition(ctx, operatorPipeline, pyxisApiSecretAvailable, metav1.ConditionTrue, reconcileSucceeded, ""); err != nil {
 		return err
 	}
 

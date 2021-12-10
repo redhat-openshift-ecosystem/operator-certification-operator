@@ -35,8 +35,7 @@ const (
 
 // reconcileCertifiedImageStream will ensure that the certified operator ImageStream is present and up to date.
 func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) error {
-	if err := r.updateStatusCondition(ctx, pipeline, certifiedImageStreamAvailable, metav1.ConditionUnknown, reconcileUnknown,
-		""); err != nil {
+	if err := r.updateStatusCondition(ctx, pipeline, certifiedImageStreamAvailable, metav1.ConditionUnknown, reconcileUnknown, ""); err != nil {
 		return err
 	}
 
@@ -48,8 +47,7 @@ func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(ctx context.C
 	stream := newImageStream(key)
 	if isObjectFound(ctx, r.Client, key, stream) {
 		log.Info("existing certified image stream found")
-		if err := r.updateStatusCondition(ctx, pipeline, certifiedImageStreamAvailable, metav1.ConditionTrue, reconcileSucceeded,
-			""); err != nil {
+		if err := r.updateStatusCondition(ctx, pipeline, certifiedImageStreamAvailable, metav1.ConditionTrue, reconcileSucceeded, ""); err != nil {
 			return err
 		}
 		return nil // Existing ImageStream found, do nothing...
@@ -72,15 +70,13 @@ func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(ctx context.C
 
 	log.Info("creating new certified image stream import")
 	if err := r.Client.Create(ctx, imgImport); err != nil {
-		if err := r.updateStatusCondition(ctx, pipeline, certifiedImageStreamAvailable, metav1.ConditionFalse, reconcileFailed,
-			err.Error()); err != nil {
+		if err := r.updateStatusCondition(ctx, pipeline, certifiedImageStreamAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 			return err
 		}
 		return err
 	}
 
-	if err := r.updateStatusCondition(ctx, pipeline, certifiedImageStreamAvailable, metav1.ConditionTrue, reconcileSucceeded,
-		""); err != nil {
+	if err := r.updateStatusCondition(ctx, pipeline, certifiedImageStreamAvailable, metav1.ConditionTrue, reconcileSucceeded, ""); err != nil {
 		return err
 	}
 
@@ -89,8 +85,7 @@ func (r *OperatorPipelineReconciler) reconcileCertifiedImageStream(ctx context.C
 
 // reconcileMarketplaceImageStream will ensure that the Red Hat Marketplace ImageStream is present and up to date.
 func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) error {
-	if err := r.updateStatusCondition(ctx, pipeline, marketplaceImageStreamAvailable, metav1.ConditionUnknown, reconcileUnknown,
-		""); err != nil {
+	if err := r.updateStatusCondition(ctx, pipeline, marketplaceImageStreamAvailable, metav1.ConditionUnknown, reconcileUnknown, ""); err != nil {
 		return err
 	}
 
@@ -102,8 +97,7 @@ func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(ctx context
 	stream := newImageStream(key)
 	if isObjectFound(ctx, r.Client, key, stream) {
 		log.Info("existing marketplace image stream found")
-		if err := r.updateStatusCondition(ctx, pipeline, marketplaceImageStreamAvailable, metav1.ConditionTrue, reconcileSucceeded,
-			""); err != nil {
+		if err := r.updateStatusCondition(ctx, pipeline, marketplaceImageStreamAvailable, metav1.ConditionTrue, reconcileSucceeded, ""); err != nil {
 			return err
 		}
 		return nil // Existing ImageStream found, do nothing...
@@ -126,15 +120,13 @@ func (r *OperatorPipelineReconciler) reconcileMarketplaceImageStream(ctx context
 
 	log.Info("creating new marketplace image stream import")
 	if err := r.Client.Create(ctx, imgImport); err != nil {
-		if err := r.updateStatusCondition(ctx, pipeline, marketplaceImageStreamAvailable, metav1.ConditionFalse, reconcileFailed,
-			err.Error()); err != nil {
+		if err := r.updateStatusCondition(ctx, pipeline, marketplaceImageStreamAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 			return err
 		}
 		return err
 	}
 
-	if err := r.updateStatusCondition(ctx, pipeline, marketplaceImageStreamAvailable, metav1.ConditionTrue, reconcileSucceeded,
-		""); err != nil {
+	if err := r.updateStatusCondition(ctx, pipeline, marketplaceImageStreamAvailable, metav1.ConditionTrue, reconcileSucceeded, ""); err != nil {
 		return err
 	}
 
