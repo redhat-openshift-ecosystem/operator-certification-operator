@@ -33,8 +33,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.C
 	// yaml manifests that need to be applied beforehand
 	// ref: https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#step-6---install-the-certification-pipeline-and-dependencies-into-the-cluster
 
-	if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionUnknown, reconcileUnknown,
-		""); err != nil {
+	if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionUnknown, reconcileUnknown, ""); err != nil {
 		return err
 	}
 
@@ -49,8 +48,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.C
 
 	if err != nil {
 		log.Error(err, "Couldn't clone the repository for operator-pipelines")
-		if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed,
-			err.Error()); err != nil {
+		if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 			return err
 		}
 		return err
@@ -69,16 +67,14 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.C
 				switch path {
 				case pipelineManifestsPath:
 					if err := r.applyManifests(ctx, filePath, pipeline, new(tekton.Pipeline)); err != nil {
-						if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed,
-							err.Error()); err != nil {
+						if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 							return err
 						}
 						return err
 					}
 				case taskManifestsPath:
 					if err := r.applyManifests(ctx, filePath, pipeline, new(tekton.Task)); err != nil {
-						if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed,
-							err.Error()); err != nil {
+						if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 							return err
 						}
 						return err
@@ -91,16 +87,14 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.C
 		})
 		if err != nil {
 			log.Error(err, "Couldn't iterate over operator-pipelines yaml manifest files")
-			if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed,
-				err.Error()); err != nil {
+			if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 				return err
 			}
 			return err
 		}
 	}
 
-	if err = r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionTrue, reconcileSucceeded,
-		""); err != nil {
+	if err = r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionTrue, reconcileSucceeded, ""); err != nil {
 		return err
 	}
 
