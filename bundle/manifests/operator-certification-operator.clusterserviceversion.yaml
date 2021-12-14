@@ -38,7 +38,7 @@ spec:
       name: operatorpipelines.certification.redhat.com
       version: v1alpha1
   description: |-
-    A Kubernetes operator to provision resources for the operator certification pipeline. This operator is installed in all namespaces which can support multi-tenant scenarios.
+    A Kubernetes operator to provision resources for the operator certification pipeline. This operator is installed in all namespaces which can support multi-tenant scenarios. **Note:** This operator should only be used by Red Hat partners attempting to certify their operator(s).
 
 
     **Requirements**
