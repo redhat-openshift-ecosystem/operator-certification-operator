@@ -1,6 +1,6 @@
 # operator-certification-operator
 A Kubernetes operator to provision resources for the operator certification pipeline. This operator is installed in all
-namespaces which can support multi-tenant scenarios. 
+namespaces which can support multi-tenant scenarios. **Note:** This operator should only be used by Red Hat partners attempting to certify their operator(s).
 
 # Requirements
 The certification operator requires that you have the following tools installed, functional, and in your path.
