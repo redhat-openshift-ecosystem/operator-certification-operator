@@ -30,12 +30,14 @@ import (
 const (
 	defaultKubeconfigSecretName        = "kubeconfig"
 	defaultKubeconfigSecretKeyName     = "kubeconfig"
-	defaultDockerRegistrySecretKeyName = ".dockerconfigjson"
 	kubeConfigSecretAvailable          = "KubeConfigSecretAvailable"
+	defaultDockerRegistrySecretKeyName = ".dockerconfigjson"
+	dockerRegistrySecretAvailable      = "DockerRegistrySecretAvailable"
 	defaultGithubApiSecretName         = "github-api-token"
 	defaultGithubApiSecretKeyName      = "GITHUB_TOKEN"
 	defaultGithubSSHSecretKeyName      = "id_rsa"
-	gitHubSecretAvailable              = "GithubSecretAvailable"
+	gitHubAPISecretAvailable           = "GithubAPISecretAvailable"
+	gitHubSSHSecretAvailable           = "GithubSSHSecretAvailable"
 	defaultPyxisApiSecretName          = "pyxis-api-secret"
 	defaultPyxisApiSecretKeyName       = "pyxis_api_key"
 	pyxisApiSecretAvailable            = "PyxisApiSecretAvailable"
@@ -80,13 +82,13 @@ func (r *OperatorPipelineReconciler) ensureGitHubAPISecret(ctx context.Context, 
 	operatorPipeline, err := r.getPipeline(ctx, meta)
 	if err != nil {
 		log.Error(err, "unable to resolve github secret for %s/%s", meta.Namespace, meta.Name)
-		if err := r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
+		if err := r.updateStatusCondition(ctx, operatorPipeline, gitHubAPISecretAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 			return err
 		}
 		return err
 	}
 
-	if err = r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionUnknown, reconcileUnknown, ""); err != nil {
+	if err = r.updateStatusCondition(ctx, operatorPipeline, gitHubAPISecretAvailable, metav1.ConditionUnknown, reconcileUnknown, ""); err != nil {
 		return err
 	}
 
@@ -96,13 +98,13 @@ func (r *OperatorPipelineReconciler) ensureGitHubAPISecret(ctx context.Context, 
 	}
 
 	if err = r.ensureSecret(ctx, secretName, defaultGithubApiSecretKeyName, meta); err != nil {
-		if err := r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
+		if err := r.updateStatusCondition(ctx, operatorPipeline, gitHubAPISecretAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 			return err
 		}
 		return err
 	}
 
-	if err = r.updateStatusCondition(ctx, operatorPipeline, gitHubSecretAvailable, metav1.ConditionTrue, reconcileSucceeded, ""); err != nil {
+	if err = r.updateStatusCondition(ctx, operatorPipeline, gitHubAPISecretAvailable, metav1.ConditionTrue, reconcileSucceeded, ""); err != nil {
 		return err
 	}
 
@@ -152,7 +154,18 @@ func (r *OperatorPipelineReconciler) ensureDockerRegistrySecret(ctx context.Cont
 	}
 
 	if operatorPipeline.Spec.DockerRegistrySecretName != "" {
+		if err = r.updateStatusCondition(ctx, operatorPipeline, dockerRegistrySecretAvailable, metav1.ConditionUnknown, reconcileUnknown, ""); err != nil {
+			return err
+		}
+
 		if err := r.ensureSecret(ctx, operatorPipeline.Spec.DockerRegistrySecretName, defaultDockerRegistrySecretKeyName, meta); err != nil {
+			if err := r.updateStatusCondition(ctx, operatorPipeline, dockerRegistrySecretAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
+				return err
+			}
+			return err
+		}
+
+		if err = r.updateStatusCondition(ctx, operatorPipeline, dockerRegistrySecretAvailable, metav1.ConditionTrue, reconcileSucceeded, ""); err != nil {
 			return err
 		}
 	}
@@ -169,7 +182,18 @@ func (r *OperatorPipelineReconciler) ensureGithubSSHSecret(ctx context.Context, 
 	}
 
 	if operatorPipeline.Spec.GithubSSHSecretName != "" {
+		if err = r.updateStatusCondition(ctx, operatorPipeline, gitHubSSHSecretAvailable, metav1.ConditionUnknown, reconcileUnknown, ""); err != nil {
+			return err
+		}
+
 		if err := r.ensureSecret(ctx, operatorPipeline.Spec.GithubSSHSecretName, defaultGithubSSHSecretKeyName, meta); err != nil {
+			if err := r.updateStatusCondition(ctx, operatorPipeline, gitHubSSHSecretAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
+				return err
+			}
+			return err
+		}
+
+		if err = r.updateStatusCondition(ctx, operatorPipeline, gitHubSSHSecretAvailable, metav1.ConditionTrue, reconcileSucceeded, ""); err != nil {
 			return err
 		}
 	}
