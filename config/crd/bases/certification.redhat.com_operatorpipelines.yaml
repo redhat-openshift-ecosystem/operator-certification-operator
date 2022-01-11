@@ -36,6 +36,18 @@ spec:
           spec:
             description: OperatorPipelineSpec defines the desired state of OperatorPipeline
             properties:
+              applyCIPipeline:
+                description: ApplyCIPipeline determines whether to install the ci
+                  pipeline.
+                type: boolean
+              applyHostedPipeline:
+                description: ApplyHostedPipeline determines whether to install the
+                  hosted pipeline.
+                type: boolean
+              applyReleasePipeline:
+                description: ApplyReleasePipeline determines whether to install the
+                  release pipeline.
+                type: boolean
               dockerRegistrySecretName:
                 description: The name of the secret containing the docker registry
                   credentials secret expected by the pipeline
@@ -60,6 +72,10 @@ spec:
                 description: The name of the secret containing the pyxis api secret
                   expected by the pipeline
                 type: string
+            required:
+            - applyCIPipeline
+            - applyHostedPipeline
+            - applyReleasePipeline
             type: object
           status:
             description: OperatorPipelineStatus defines the observed state of OperatorPipeline

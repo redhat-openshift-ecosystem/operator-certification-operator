@@ -7,3 +7,6 @@ spec:
   kubeconfigSecretName: "kubeconfig"
   gitHubSecretName: "github-api-token"
   pyxisSecretName: "pyxis-api-secret"
+  applyCIPipeline: true
+  applyHostedPipeline: false
+  applyReleasePipeline: false

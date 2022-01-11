@@ -43,6 +43,21 @@ type OperatorPipelineSpec struct {
 
 	// The name of the secret containing the github ssh secret expected by the pipeline
 	GithubSSHSecretName string `json:"githubSSHSecretName,omitempty"`
+
+	// ApplyCIPipeline determines whether to install the ci pipeline.
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="CI Pipeline",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
+	//+kubebuilder:validation:Required
+	ApplyCIPipeline bool `json:"applyCIPipeline"`
+
+	// ApplyHostedPipeline determines whether to install the hosted pipeline.
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Hosted Pipeline",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
+	//+kubebuilder:validation:Required
+	ApplyHostedPipeline bool `json:"applyHostedPipeline"`
+
+	// ApplyReleasePipeline determines whether to install the release pipeline.
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Release Pipeline",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
+	//+kubebuilder:validation:Required
+	ApplyReleasePipeline bool `json:"applyReleasePipeline"`
 }
 
 // OperatorPipelineStatus defines the observed state of OperatorPipeline

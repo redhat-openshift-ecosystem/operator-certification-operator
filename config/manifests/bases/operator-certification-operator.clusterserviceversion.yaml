@@ -19,6 +19,24 @@ spec:
       displayName: Operator Pipeline
       kind: OperatorPipeline
       name: operatorpipelines.certification.redhat.com
+      specDescriptors:
+      - description: ApplyCIPipeline determines whether to install the ci pipeline.
+        displayName: CI Pipeline
+        path: applyCIPipeline
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: ApplyHostedPipeline determines whether to install the hosted
+          pipeline.
+        displayName: Hosted Pipeline
+        path: applyHostedPipeline
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: ApplyReleasePipeline determines whether to install the release
+          pipeline.
+        displayName: Release Pipeline
+        path: applyReleasePipeline
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       version: v1alpha1
   description: |-
     A Kubernetes operator to provision resources for the operator certification pipeline. This operator is installed in all namespaces which can support multi-tenant scenarios. **Note:** This operator should only be used by Red Hat partners attempting to certify their operator(s).
