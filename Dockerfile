@@ -29,7 +29,7 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 
 LABEL \
     com.redhat.component="operator-certification-operator" \
-    version="0.0.0" \
+    version="${release_tag}" \
     name="operator-certification-operator" \
     License="Apache-2.0" \
     io.k8s.display-name="operator-certification-operator bundle" \
