@@ -21,6 +21,7 @@ import (
 
 	imagev1 "github.com/openshift/api/image/v1"
 	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/reconcilers"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -52,8 +53,8 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	reqLogger := logf.FromContext(ctx, "Request.Namespace", req.Namespace, "Request.Name", req.Name)
 	reqLogger.Info("Reconciling OperatorPipeline")
 
-	pipeline := &certv1alpha1.OperatorPipeline{}
-	err := r.Client.Get(ctx, req.NamespacedName, pipeline)
+	currentPipeline := &certv1alpha1.OperatorPipeline{}
+	err := r.Client.Get(ctx, req.NamespacedName, currentPipeline)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request. Return and don't
@@ -63,12 +64,29 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	err = r.reconcileResources(ctx, pipeline)
+	err = r.reconcileResources(ctx, currentPipeline)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{}, nil
+	reconcilers := []reconcilers.Reconciler{
+		reconcilers.NewCertifiedImageStreamReconciler(r.Client, reqLogger, r.Scheme),
+		reconcilers.NewMarketplaceImageStreamReconciler(r.Client, reqLogger, r.Scheme),
+		reconcilers.NewStatusReconciler(r.Client, reqLogger, r.Scheme),
+	}
+
+	requeueResult := false
+	pipeline := currentPipeline.DeepCopy()
+	for _, r := range reconcilers {
+		requeue, err := r.Reconcile(ctx, pipeline)
+		if err != nil {
+			log.Error(err, "requeuing with error")
+			return ctrl.Result{Requeue: true}, err
+		}
+		requeueResult = requeueResult || requeue
+	}
+
+	return ctrl.Result{Requeue: requeueResult}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

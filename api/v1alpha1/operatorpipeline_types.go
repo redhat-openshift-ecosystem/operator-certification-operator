@@ -68,6 +68,10 @@ type OperatorPipelineStatus struct {
 	// +optional
 	// Conditions is a list of conditions related to operator reconciliation
 	Conditions []metav1.Condition `json:"conditions,omitempty"  patchStrategy:"merge" patchMergeKey:"type"`
+
+	// ObservedGeneration is the generation last observed by the controller
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
 //+kubebuilder:object:root=true

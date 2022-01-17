@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/go-git/go-git/v5 v5.4.2
+	github.com/go-logr/logr v0.4.0
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.13.0
 	github.com/openshift/api v3.9.0+incompatible
@@ -47,7 +48,6 @@ require (
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
 	github.com/go-kit/log v0.1.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.0 // indirect
-	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/go-logr/zapr v0.4.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
