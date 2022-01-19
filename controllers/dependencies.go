@@ -20,6 +20,9 @@ import (
 const (
 	operatorPipelinesRepo         = "https://github.com/redhat-openshift-ecosystem/operator-pipelines.git"
 	pipelineDependenciesAvailable = "PipelineDependenciesAvailable"
+	operatorCIPipelineYml         = "operator-ci-pipeline.yml"
+	operatorHostedPipelineYml     = "operator-hosted-pipeline.yml"
+	operatorReleasePipelineYml    = "operator-release-pipeline.yml"
 )
 
 var (
@@ -54,43 +57,66 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.C
 		return err
 	}
 
-	paths := []string{pipelineManifestsPath, taskManifestsPath}
-	for _, path := range paths {
-		// base repository root + specific yaml manifest directory (pipelines or tasks)
-		root := filepath.Join(tmpRepoClonePath, path)
+	pipelineManifestsPath := filepath.Join(tmpRepoClonePath, pipelineManifestsPath)
 
-		// walking through each directory (pipelines or tasks)
-		err = filepath.Walk(root, func(filePath string, info os.FileInfo, err error) error {
-
-			// For each file NOT directories
-			if !info.IsDir() {
-				switch path {
-				case pipelineManifestsPath:
-					if err := r.applyManifests(ctx, filePath, pipeline, new(tekton.Pipeline)); err != nil {
-						if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
-							return err
-						}
-						return err
-					}
-				case taskManifestsPath:
-					if err := r.applyManifests(ctx, filePath, pipeline, new(tekton.Task)); err != nil {
-						if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
-							return err
-						}
-						return err
-					}
-				default:
-					return nil
-				}
-			}
-			return nil
-		})
-		if err != nil {
-			log.Error(err, "Couldn't iterate over operator-pipelines yaml manifest files")
+	if pipeline.Spec.ApplyCIPipeline {
+		if err := r.applyManifests(ctx, filepath.Join(pipelineManifestsPath, operatorCIPipelineYml), pipeline, new(tekton.Pipeline)); err != nil {
 			if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
 				return err
 			}
 			return err
+		}
+	} else {
+		if err := r.deleteManifests(ctx, filepath.Join(pipelineManifestsPath, operatorCIPipelineYml), pipeline, new(tekton.Pipeline)); err != nil {
+			return err
+		}
+	}
+
+	if pipeline.Spec.ApplyHostedPipeline {
+		if err := r.applyManifests(ctx, filepath.Join(pipelineManifestsPath, operatorHostedPipelineYml), pipeline, new(tekton.Pipeline)); err != nil {
+			if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
+				return err
+			}
+			return err
+		}
+	} else {
+		if err := r.deleteManifests(ctx, filepath.Join(pipelineManifestsPath, operatorHostedPipelineYml), pipeline, new(tekton.Pipeline)); err != nil {
+			return err
+		}
+	}
+
+	if pipeline.Spec.ApplyReleasePipeline {
+		if err := r.applyManifests(ctx, filepath.Join(pipelineManifestsPath, operatorReleasePipelineYml), pipeline, new(tekton.Pipeline)); err != nil {
+			if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
+				return err
+			}
+			return err
+		}
+	} else {
+		if err := r.deleteManifests(ctx, filepath.Join(pipelineManifestsPath, operatorReleasePipelineYml), pipeline, new(tekton.Pipeline)); err != nil {
+			return err
+		}
+	}
+
+	taskManifestsPath := filepath.Join(tmpRepoClonePath, taskManifestsPath)
+
+	tasks, err := os.ReadDir(taskManifestsPath)
+	if err != nil {
+		log.Error(err, "could not read tasks directory")
+		if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
+			return err
+		}
+		return err
+	}
+
+	for _, task := range tasks {
+		if !task.IsDir() {
+			if err := r.applyManifests(ctx, filepath.Join(taskManifestsPath, task.Name()), pipeline, new(tekton.Task)); err != nil {
+				if err := r.updateStatusCondition(ctx, pipeline, pipelineDependenciesAvailable, metav1.ConditionFalse, reconcileFailed, err.Error()); err != nil {
+					return err
+				}
+				return err
+			}
 		}
 	}
 
@@ -132,6 +158,34 @@ func (r *OperatorPipelineReconciler) applyManifests(ctx context.Context, fileNam
 			log.Error(err, fmt.Sprintf("failed to create pipeline resource for file: %s", fileName))
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (r *OperatorPipelineReconciler) deleteManifests(ctx context.Context, fileName string, owner, obj client.Object) error {
+
+	b, err := os.ReadFile(fileName)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("Couldn't read manifest file for: %s", fileName))
+		return err
+	}
+
+	if err = yamlutil.Unmarshal(b, &obj); err != nil {
+		log.Error(err, fmt.Sprintf("Couldn't unmarshall yaml file for: %s", fileName))
+		return err
+	}
+
+	obj.SetNamespace(owner.GetNamespace())
+	if err := r.Client.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil && !errors.IsNotFound(err) {
+		return err
+	} else if errors.IsNotFound(err) {
+		return nil
+	}
+
+	if err := r.Client.Delete(ctx, obj); err != nil {
+		log.Error(err, fmt.Sprintf("failed to delete pipeline resource for file: %s", fileName))
+		return err
 	}
 
 	return nil
