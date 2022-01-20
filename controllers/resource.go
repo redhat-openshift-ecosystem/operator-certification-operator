@@ -86,6 +86,9 @@ func (r *OperatorPipelineReconciler) reconcileResources(ctx context.Context, pip
 // updateStatusCondition updates the status/reason/message for each condition for which we reconcile
 func (r *OperatorPipelineReconciler) updateStatusCondition(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline,
 	conditionType string, status metav1.ConditionStatus, reason, message string) error {
+	if err := r.Client.Get(ctx, types.NamespacedName{Name: pipeline.GetName(), Namespace: pipeline.GetNamespace()}, pipeline); err != nil {
+		return err
+	}
 	// checking to see if a given condition type is present, since on each reconcile we do not want to set condition
 	// to "Unknown" unless that conditionType has not previously been set to "True" or "False"
 	if (meta.IsStatusConditionPresentAndEqual(pipeline.Status.Conditions, conditionType, metav1.ConditionTrue) ||
