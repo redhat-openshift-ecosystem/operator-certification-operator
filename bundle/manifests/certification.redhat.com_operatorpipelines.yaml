@@ -156,6 +156,10 @@ spec:
                   the controller
                 format: int64
                 type: integer
+              pipelinesRepoHash:
+                description: PipelinesRepoHash is the hash of the operator-pipelines
+                  repo
+                type: string
             type: object
         type: object
     served: true

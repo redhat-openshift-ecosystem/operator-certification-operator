@@ -3,8 +3,11 @@ package reconcilers
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/logr"
 	imagev1 "github.com/openshift/api/image/v1"
 	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
@@ -16,6 +19,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -56,8 +60,17 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, pipeline *certv1alpha1
 	pipeline.Status.ObservedGeneration = pipeline.Generation
 	log := r.Log.WithValues("status.observedGeneration", pipeline.Generation)
 
+	// This is here so that we don't have to worry about which one of these has the :=
+	var requeue bool
+	var err error
+
+	requeue, err = r.reconcilePipelineGitRepoStatus(ctx, pipeline)
+	if requeue || err != nil {
+		return requeue, err
+	}
+
 	kubeconfigSecret := overrideSecretFromSpec(defaultKubeconfigSecretName, pipeline.Spec.KubeconfigSecretName)
-	requeue, err := r.reconcileSecretStatus(ctx, pipeline, "KubeconfigSecret", kubeconfigSecret, defaultKubeconfigSecretKeyName)
+	requeue, err = r.reconcileSecretStatus(ctx, pipeline, "KubeconfigSecret", kubeconfigSecret, defaultKubeconfigSecretKeyName)
 	if requeue || err != nil {
 		return requeue, err
 	}
@@ -86,6 +99,27 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, pipeline *certv1alpha1
 		if requeue || err != nil {
 			return requeue, err
 		}
+	}
+
+	requeue, err = r.reconcilePipelineStatus(ctx, pipeline, "CIPipeline", operatorCIPipelineYml, pipeline.Spec.ApplyCIPipeline)
+	if requeue || err != nil {
+		return requeue, err
+	}
+
+	requeue, err = r.reconcilePipelineStatus(ctx, pipeline, "HostedPipeline", operatorHostedPipelineYml, pipeline.Spec.ApplyHostedPipeline)
+	if requeue || err != nil {
+		return requeue, err
+	}
+
+	requeue, err = r.reconcilePipelineStatus(ctx, pipeline, "ReleasePipeline", operatorReleasePipelineYml, pipeline.Spec.ApplyReleasePipeline)
+	if requeue || err != nil {
+		return requeue, err
+	}
+
+	// TODO(bpc): Task status
+	requeue, err = r.reconcileTasksStatus(ctx, pipeline)
+	if requeue || err != nil {
+		return requeue, err
 	}
 
 	requeue, err = r.reconcileImageStreamStatus(ctx, pipeline, "CertifiedIndex", certifiedIndex)
@@ -228,6 +262,203 @@ func (r *StatusReconciler) reconcileSecretStatus(ctx context.Context, pipeline *
 		r.conditionStatus(true),
 		"AsExpected",
 		fmt.Sprintf("%s secret found", secretName),
+		readyCondition))
+
+	return false, nil
+}
+
+func (r *StatusReconciler) reconcilePipelineGitRepoStatus(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) (bool, error) {
+	readyCondition := v1.Condition{
+		Type:               "GitRepoReady",
+		ObservedGeneration: pipeline.Generation,
+		Status:             v1.ConditionUnknown,
+	}
+
+	repo, err := git.PlainOpen(filepath.Join(os.Getenv("GIT_REPO_PATH"), "operator-pipelines"))
+	if err != nil {
+		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+			r.conditionStatus(false),
+			"NotFound",
+			"Local repo unavailable",
+			readyCondition))
+		return true, err
+	}
+	ref, err := repo.Head()
+	if err != nil {
+		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+			r.conditionStatus(false),
+			"Invalid",
+			"Local repo invalid",
+			readyCondition))
+		return true, err
+	}
+
+	pipeline.Status.PipelinesRepoHash = ref.Hash().String()
+
+	meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+		r.conditionStatus(true),
+		"AsExpected",
+		"Git repo is ready",
+		readyCondition))
+
+	return false, nil
+}
+
+func (r *StatusReconciler) reconcilePipelineStatus(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline, pipelineType, pipelineYaml string, pipelinePresent bool) (bool, error) {
+	readyCondition := v1.Condition{
+		Type:               fmt.Sprintf("%sReady", pipelineType),
+		ObservedGeneration: pipeline.Generation,
+		Status:             v1.ConditionUnknown,
+	}
+
+	if !pipelinePresent {
+		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+			r.conditionStatus(true),
+			"AsExpected",
+			"Pipeline not requested",
+			readyCondition))
+		return false, nil
+	}
+
+	gitPath := filepath.Join(os.Getenv("GIT_REPO_PATH"), "operator-pipeline")
+	// This will check that the repo has been cloned and is valid
+	_, err := git.PlainOpen(gitPath)
+	if err != nil {
+		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+			r.conditionStatus(false),
+			"NotFound",
+			"Local repo unavailable",
+			readyCondition))
+		return true, err
+	}
+
+	fileName := filepath.Join(gitPath, pipelineManifestsPath, pipelineYaml)
+	b, err := os.ReadFile(fileName)
+	if err != nil {
+		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+			r.conditionStatus(false),
+			"Invalid",
+			"Pipeline YAML could not be read",
+			readyCondition))
+		return true, err
+	}
+
+	var obj client.Object
+	if err = yamlutil.Unmarshal(b, &obj); err != nil {
+		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+			r.conditionStatus(false),
+			"Invalid",
+			"Pipeline YAML not valid",
+			readyCondition))
+		return true, err
+	}
+
+	obj.SetNamespace(pipeline.ObjectMeta.Namespace)
+	err = r.Client.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
+	if err != nil {
+		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+			r.conditionStatus(false),
+			"NotFound",
+			"Pipeline not found",
+			readyCondition))
+		return true, err
+	}
+
+	meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+		r.conditionStatus(true),
+		"AsExpected",
+		fmt.Sprintf("%s pipeline is ready", pipelineType),
+		readyCondition))
+
+	return false, nil
+}
+
+func (r *StatusReconciler) reconcileTasksStatus(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) (bool, error) {
+	readyCondition := v1.Condition{
+		Type:               fmt.Sprintf("TasksReady"),
+		ObservedGeneration: pipeline.Generation,
+		Status:             v1.ConditionUnknown,
+	}
+
+	gitPath := filepath.Join(os.Getenv("GIT_REPO_PATH"), "operator-pipeline")
+	// This will check that the repo has been cloned and is valid
+	_, err := git.PlainOpen(gitPath)
+	if err != nil {
+		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+			r.conditionStatus(false),
+			"NotFound",
+			"Local repo unavailable",
+			readyCondition))
+		return true, err
+	}
+
+	fileName := filepath.Join(gitPath, taskManifestsPath)
+	directory, err := os.ReadDir(fileName)
+	if err != nil {
+		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+			r.conditionStatus(false),
+			"Invalid",
+			"Tasks YAML directory could not be read",
+			readyCondition))
+		return true, err
+	}
+
+	var obj client.Object
+	fileErrors := make([]string, 10)
+	unmarshalErrors := make([]string, 10)
+	getErrors := make([]string, 10)
+	for _, entry := range directory {
+		if entry.IsDir() {
+			continue
+		}
+		b, err := os.ReadFile(entry.Name())
+		if err != nil {
+			fileErrors = append(fileErrors, entry.Name())
+			continue
+		}
+		if err = yamlutil.Unmarshal(b, &obj); err != nil {
+			unmarshalErrors = append(unmarshalErrors, entry.Name())
+			continue
+		}
+		obj.SetNamespace(pipeline.ObjectMeta.Namespace)
+		err = r.Client.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
+		if err != nil && apierrors.IsNotFound(err) {
+			getErrors = append(getErrors, obj.GetName())
+			continue
+		}
+	}
+
+	if len(fileErrors) > 0 {
+		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+			r.conditionStatus(false),
+			"NotFound",
+			fmt.Sprintf("Some tasks YAML files could not be read: %x", fileErrors),
+			readyCondition))
+		return true, nil
+	}
+
+	if len(unmarshalErrors) > 0 {
+		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+			r.conditionStatus(false),
+			"Invalid",
+			fmt.Sprintf("Some tasks YAML files are not valid: %x", unmarshalErrors),
+			readyCondition))
+		return true, nil
+	}
+
+	if len(unmarshalErrors) > 0 {
+		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+			r.conditionStatus(false),
+			"NotFound",
+			fmt.Sprintf("Some tasks are not present: %x", getErrors),
+			readyCondition))
+		return true, nil
+	}
+
+	meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
+		r.conditionStatus(true),
+		"AsExpected",
+		"Tasks are ready",
 		readyCondition))
 
 	return false, nil

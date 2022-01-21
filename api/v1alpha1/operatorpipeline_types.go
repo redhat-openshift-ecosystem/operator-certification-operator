@@ -72,6 +72,10 @@ type OperatorPipelineStatus struct {
 	// ObservedGeneration is the generation last observed by the controller
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// PipelinesRepoHash is the hash of the operator-pipelines repo
+	// +optional
+	PipelinesRepoHash string `json:"pipelinesRepoHash,omitempty"`
 }
 
 //+kubebuilder:object:root=true
