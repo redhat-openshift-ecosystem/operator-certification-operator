@@ -34,6 +34,12 @@ spec:
         name: manager
         securityContext:
           allowPrivilegeEscalation: false
+        env:
+          - name: GIT_REPO_PATH
+            value: "/git"
+        volumeMounts:
+        - mountPath: /git
+          name: pipeline-clone-volume
         livenessProbe:
           httpGet:
             path: /healthz
@@ -53,5 +59,8 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
+      volumes:
+      - name: pipeline-clone-volume
+        emptyDir: {}
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10

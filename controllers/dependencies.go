@@ -40,14 +40,13 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.C
 		return err
 	}
 
-	// creating a tmp director so that each reconcile gets a new directory in case the defer does not execute properly
-	tmpRepoClonePath, _ := os.MkdirTemp("", "operator-pipelines-*")
-
-	_, err := git.PlainClone(tmpRepoClonePath, false, &git.CloneOptions{
-		URL: operatorPipelinesRepo,
-	})
-
-	defer os.RemoveAll(tmpRepoClonePath)
+	gitMount, ok := os.LookupEnv("GIT_REPO_PATH")
+	if !ok {
+		log.Error(ErrGitRepoPathNotSpecified, "could not find envvar GIT_REPO_PATH")
+		return ErrGitRepoPathNotSpecified
+	}
+	gitPath := filepath.Join(gitMount, "operator-pipeline")
+	err := cloneOrPullRepo(gitPath)
 
 	if err != nil {
 		log.Error(err, "Couldn't clone the repository for operator-pipelines")
@@ -57,7 +56,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.C
 		return err
 	}
 
-	pipelineManifestsPath := filepath.Join(tmpRepoClonePath, pipelineManifestsPath)
+	pipelineManifestsPath := filepath.Join(gitPath, pipelineManifestsPath)
 
 	if pipeline.Spec.ApplyCIPipeline {
 		if err := r.applyManifests(ctx, filepath.Join(pipelineManifestsPath, operatorCIPipelineYml), pipeline, new(tekton.Pipeline)); err != nil {
@@ -98,7 +97,7 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.C
 		}
 	}
 
-	taskManifestsPath := filepath.Join(tmpRepoClonePath, taskManifestsPath)
+	taskManifestsPath := filepath.Join(gitPath, taskManifestsPath)
 
 	tasks, err := os.ReadDir(taskManifestsPath)
 	if err != nil {
@@ -188,5 +187,41 @@ func (r *OperatorPipelineReconciler) deleteManifests(ctx context.Context, fileNa
 		return err
 	}
 
+	return nil
+}
+
+func cloneOrPullRepo(targetPath string) error {
+	// Directory does not exist, so let's clone
+	_, err := git.PlainClone(targetPath, false, &git.CloneOptions{
+		URL: operatorPipelinesRepo,
+	})
+	if err != nil && err != git.ErrRepositoryAlreadyExists {
+		log.Error(err, "could not clone repo")
+		return err
+	}
+	if err == git.ErrRepositoryAlreadyExists {
+		// The directory is already there, so let's just update to latest
+		r, err := git.PlainOpen(targetPath)
+		if err != nil {
+			log.Error(err, "could not open existing git dir")
+			return err
+		}
+		w, err := r.Worktree()
+		if err != nil {
+			log.Error(err, "could not open git worktree")
+			return err
+		}
+		err = w.Pull(&git.PullOptions{RemoteName: "origin"})
+		if err != nil && err != git.NoErrAlreadyUpToDate {
+			log.Error(err, "could not pull remote git repo")
+			return err
+		}
+		ref, err := r.Head()
+		if err != nil {
+			log.Error(err, "could not retrieve current head of")
+			return err
+		}
+		log.Info(fmt.Sprintf("Hash of operator-pipelines HEAD: %s", ref.Hash()))
+	}
 	return nil
 }
