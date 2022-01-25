@@ -26,7 +26,8 @@ for local development, this dependency must be installed before *Testing Locally
 ## Testing Locally
 1. Have a cluster up and running
 2. Run `make install` to install `CRD's`
-3. Run `make run` to start the operator
+3. Export GIT_REPO_PATH. This path is used inside the operator container and goes not need to exist on the host. `export GIT_REPO_PATH=/git`
+4. Run `make run` to start the operator
    1. Or start the operator in your preferred manner
-4. Run `./docs/dev/seed.sh` to see all the configs/secrets in the cluster
+5. Run `./docs/dev/seed.sh` to see all the configs/secrets in the cluster
    1. Depending on what reconciler you are working on feel free to comment out anything in the file not related
