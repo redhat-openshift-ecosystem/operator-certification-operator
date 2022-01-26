@@ -45,6 +45,8 @@ const (
 	reconcileUnknown   = "ReconcileUnknown"
 )
 
+// TODO: bcrochet All of this code will go away
+
 // reconcileResources will ensure that all required resources are present and up to date.
 func (r *OperatorPipelineReconciler) reconcileResources(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) error {
 
@@ -70,14 +72,6 @@ func (r *OperatorPipelineReconciler) reconcileResources(ctx context.Context, pip
 
 	if err := r.ensureGithubSSHSecret(ctx, pipeline.ObjectMeta); err != nil {
 		log.Info("Github SSH Secret not present or correct. Create it to enable digest pinning.")
-	}
-
-	if err := r.reconcileCertifiedImageStream(ctx, pipeline); err != nil {
-		return err
-	}
-
-	if err := r.reconcileMarketplaceImageStream(ctx, pipeline); err != nil {
-		return err
 	}
 
 	return nil

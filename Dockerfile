@@ -18,6 +18,7 @@ COPY Makefile Makefile
 COPY hack/ hack/
 COPY api/ api/
 COPY controllers/ controllers/
+COPY internal/ internal/
 
 # Copy git repo for sha info
 COPY .git .git
