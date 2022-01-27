@@ -8,8 +8,9 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/errors"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
@@ -42,8 +43,8 @@ func (r *OperatorPipelineReconciler) reconcilePipelineDependencies(ctx context.C
 
 	gitMount, ok := os.LookupEnv("GIT_REPO_PATH")
 	if !ok {
-		log.Error(ErrGitRepoPathNotSpecified, "could not find envvar GIT_REPO_PATH")
-		return ErrGitRepoPathNotSpecified
+		log.Error(errors.ErrGitRepoPathNotSpecified, "could not find envvar GIT_REPO_PATH")
+		return errors.ErrGitRepoPathNotSpecified
 	}
 	gitPath := filepath.Join(gitMount, "operator-pipeline")
 	err := cloneOrPullRepo(gitPath)
@@ -149,7 +150,7 @@ func (r *OperatorPipelineReconciler) applyManifests(ctx context.Context, fileNam
 	}
 
 	if err != nil {
-		if !errors.IsNotFound(err) {
+		if !apierrors.IsNotFound(err) {
 			return err
 		}
 		controllerutil.SetControllerReference(owner, obj, r.Scheme)
@@ -176,9 +177,9 @@ func (r *OperatorPipelineReconciler) deleteManifests(ctx context.Context, fileNa
 	}
 
 	obj.SetNamespace(owner.GetNamespace())
-	if err := r.Client.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil && !errors.IsNotFound(err) {
+	if err := r.Client.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil && !apierrors.IsNotFound(err) {
 		return err
-	} else if errors.IsNotFound(err) {
+	} else if apierrors.IsNotFound(err) {
 		return nil
 	}
 
