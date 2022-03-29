@@ -332,7 +332,7 @@ spec:
                 env:
                 - name: GIT_REPO_PATH
                   value: /git
-                image: quay.io/opdev/operator-certification-operator@sha256:27645327eff32530c2b7fcbebd9e4fa05290014a2141a2f66b7b5b1edbc7bdb4
+                image: quay.io/opdev/operator-certification-operator@sha256:21967ea36526c28685705d342a3b68c60555845bdd06cb4e36ca6067eee0cf6d
                 imagePullPolicy: Always
                 livenessProbe:
                   httpGet:
@@ -426,4 +426,4 @@ spec:
   minKubeVersion: 1.21.0
   provider:
     name: Red Hat
-  version: 0.0.1
+  version: 1.0.0
