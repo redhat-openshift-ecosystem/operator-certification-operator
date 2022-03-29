@@ -316,7 +316,7 @@ spec:
                 - --upstream=http://127.0.0.1:8080/
                 - --logtostderr=true
                 - --v=10
-                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+                image: registry.redhat.io/openshift4/ose-kube-rbac-proxy@sha256:f000432f07cd187469f0310e3ed9dcf9a5db2be14b8bab9c5293dd1ee8518176
                 name: kube-rbac-proxy
                 ports:
                 - containerPort: 8443
@@ -332,7 +332,7 @@ spec:
                 env:
                 - name: GIT_REPO_PATH
                   value: /git
-                image: quay.io/opdev/operator-certification-operator:latest
+                image: quay.io/opdev/operator-certification-operator@sha256:27645327eff32530c2b7fcbebd9e4fa05290014a2141a2f66b7b5b1edbc7bdb4
                 imagePullPolicy: Always
                 livenessProbe:
                   httpGet:
