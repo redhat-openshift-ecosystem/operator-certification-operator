@@ -1,5 +1,5 @@
 ARG quay_expiration=never
-ARG release_tag=0.0.0
+ARG release_tag=1.0.0
 
 # Build the manager binary
 FROM docker.io/library/golang:1.17 as builder
@@ -28,6 +28,8 @@ RUN make build RELEASE_TAG=${release_tag}
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 
+ARG release_tag
+
 LABEL \
     com.redhat.component="operator-certification-operator" \
     version="${release_tag}" \
@@ -41,7 +43,7 @@ LABEL \
     release="${release_tag}" \
     description="A Kubernetes operator to provision resources for the operator certification"
     
-COPY LICENSE /licenses
+COPY licenses /licenses
 
 ARG quay_expiration
 
