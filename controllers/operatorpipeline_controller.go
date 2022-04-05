@@ -64,12 +64,9 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	err = r.reconcileResources(ctx, currentPipeline)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
 	reconcilers := []reconcilers.Reconciler{
+		reconcilers.NewPipelineGitRepoReconciler(r.Client, reqLogger, r.Scheme),
+		reconcilers.NewPipeDependenciesReconciler(r.Client, reqLogger, r.Scheme),
 		reconcilers.NewCertifiedImageStreamReconciler(r.Client, reqLogger, r.Scheme),
 		reconcilers.NewMarketplaceImageStreamReconciler(r.Client, reqLogger, r.Scheme),
 		reconcilers.NewStatusReconciler(r.Client, reqLogger, r.Scheme),
