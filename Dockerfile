@@ -1,5 +1,5 @@
 ARG quay_expiration=never
-ARG release_tag=1.0.0
+ARG release_tag=0.0.0
 
 # Build the manager binary
 FROM docker.io/library/golang:1.17 as builder
