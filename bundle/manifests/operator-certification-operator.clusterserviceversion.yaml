@@ -1,4 +1,3 @@
----
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
@@ -30,7 +29,7 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/redhat-openshift-ecosystem/operator-certification-operator
     support: Red Hat
-  name: operator-certification-operator.v0.0.0
+  name: operator-certification-operator.v1.0.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -60,16 +59,14 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       version: v1alpha1
   description: |-
-    A Kubernetes operator to provision resources for the operator certification pipeline. This operator is installed in all namespaces which can support multi-tenant scenarios.
-    **Note:** This operator should only be used by Red Hat partners attempting to certify their operator(s).
+    A Kubernetes operator to provision resources for the operator certification pipeline. This operator is installed in all namespaces which can support multi-tenant scenarios. **Note:** This operator should only be used by Red Hat partners attempting to certify their operator(s).
 
 
     **Requirements**
 
 
     The certification operator requires that you have the following tools installed, functional, and in your path.
-    - [Install](https://docs.openshift.com/container-platform/4.8/cli_reference/openshift_cli/getting-started-cli.html#installing-openshift-cli)
-      oc, the OpenShift CLI tool (tested with version 4.7.13)
+    - [Install](https://docs.openshift.com/container-platform/4.8/cli_reference/openshift_cli/getting-started-cli.html#installing-openshift-cli) oc, the OpenShift CLI tool (tested with version 4.7.13)
     - [Install](https://tekton.dev/docs/cli/) tkn, the Tekton CLI tool (tested with version 0.19.1)
     - [Install](https://git-scm.com/downloads) git, the Git CLI tool (tested with 2.32.0)
     - The certification pipeline expects you to have the source files of your Operator bundle
@@ -78,8 +75,7 @@ spec:
     **Pre - Installation**
 
 
-    The below steps exist for simplicity and to make the installation clearer. The operator watches all namespaces, so if secrets/configs/etc already exist in another namespace,
-    feel free to use the existing namespace when following the operator installation steps.
+    The below steps exist for simplicity and to make the installation clearer. The operator watches all namespaces, so if secrets/configs/etc already exist in another namespace, feel free to use the existing namespace when following the operator installation steps.
 
 
     **Create a new namespace where the following secrets will be applied.**
@@ -107,14 +103,13 @@ spec:
     ```
     - Add RedHat Container API access key
 
-      This API access key is specifically related to your unique partner account for Red Hat Connect portal. Instructions to obtain your API key can be found:
-      [here](https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/operator-cert-workflow.md#step-b---get-api-key)
+      This API access key is specifically related to your unique partner account for Red Hat Connect portal. Instructions to obtain your API key can be found: [here](https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/operator-cert-workflow.md#step-b---get-api-key)
     ```
     oc create secret generic pyxis-api-secret --from-literal pyxis_api_key=< API KEY >
     ```
 
-    - Optional pipeline configurations can be found
-    [here](https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#optional-configuration)
+    - Optional pipeline configurations can be found [here](https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#optional-configuration)
+
 
 
     **Execute the Pipeline (Development Iterations)**
@@ -134,8 +129,7 @@ spec:
     EOF
     ```
 
-    There are multiple ways to execute the Pipeline which can be found
-    [here](https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#execute-the-pipeline-development-iterations)
+    There are multiple ways to execute the Pipeline which can be found [here](https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#execute-the-pipeline-development-iterations)
   displayName: Operator Certification Operator
   icon:
   - base64data: |-
@@ -332,7 +326,7 @@ spec:
                 env:
                 - name: GIT_REPO_PATH
                   value: /git
-                image: quay.io/opdev/operator-certification-operator@sha256:21967ea36526c28685705d342a3b68c60555845bdd06cb4e36ca6067eee0cf6d
+                image: quay.io/opdev/operator-certification-operator:1.0.1
                 imagePullPolicy: Always
                 livenessProbe:
                   httpGet:
@@ -426,4 +420,4 @@ spec:
   minKubeVersion: 1.21.0
   provider:
     name: Red Hat
-  version: 1.0.0
+  version: 1.0.1
