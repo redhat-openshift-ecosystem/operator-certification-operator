@@ -95,7 +95,7 @@ func (r *PipelineDependenciesReconciler) applyOrDeletePipeline(ctx context.Conte
 	if applyManifest {
 		return r.applyManifests(ctx, yamlPath, pipeline, new(tekton.Pipeline))
 	}
-	return r.deleteManifests(ctx, filepath.Join(pipelineManifestsPath, operatorCIPipelineYml), pipeline, new(tekton.Pipeline))
+	return r.deleteManifests(ctx, yamlPath, pipeline, new(tekton.Pipeline))
 }
 
 func (r *PipelineDependenciesReconciler) applyManifests(ctx context.Context, fileName string, owner, obj client.Object) error {
