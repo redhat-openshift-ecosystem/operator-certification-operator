@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-logr/logr"
 	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/errors"
@@ -40,7 +41,7 @@ func (r *PipelineGitRepoReconciler) Reconcile(ctx context.Context, pipeline *cer
 		return true, errors.ErrGitRepoPathNotSpecified
 	}
 	gitPath := filepath.Join(gitMount, "operator-pipeline")
-	hash, err := cloneOrPullRepo(gitPath)
+	hash, err := cloneOrPullRepo(gitPath, pipeline.Spec.OperatorPipelinesRelease)
 	if err != nil {
 		log.Error(err, "Couldn't clone the repository for operator-pipelines")
 		return true, err
@@ -50,10 +51,11 @@ func (r *PipelineGitRepoReconciler) Reconcile(ctx context.Context, pipeline *cer
 	return false, nil
 }
 
-func cloneOrPullRepo(targetPath string) (string, error) {
+func cloneOrPullRepo(targetPath string, branchName string) (string, error) {
 	// Try to clone first
 	_, err := git.PlainClone(targetPath, false, &git.CloneOptions{
-		URL: operatorPipelinesRepo,
+		URL:           operatorPipelinesRepo,
+		ReferenceName: plumbing.NewBranchReferenceName(branchName),
 	})
 	if err != nil && err != git.ErrRepositoryAlreadyExists {
 		return "", err
