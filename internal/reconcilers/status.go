@@ -12,6 +12,7 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/errors"
+	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -274,7 +275,7 @@ func (r *StatusReconciler) reconcilePipelineGitRepoStatus(ctx context.Context, p
 		Status:             v1.ConditionUnknown,
 	}
 
-	repo, err := git.PlainOpen(filepath.Join(os.Getenv("GIT_REPO_PATH"), "operator-pipelines"))
+	repo, err := git.PlainOpen(filepath.Join(os.Getenv("GIT_REPO_PATH"), "operator-pipeline"))
 	if err != nil {
 		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
 			r.conditionStatus(false),
@@ -343,7 +344,7 @@ func (r *StatusReconciler) reconcilePipelineStatus(ctx context.Context, pipeline
 		return true, err
 	}
 
-	var obj client.Object
+	var obj = new(tekton.Pipeline)
 	if err = yamlutil.Unmarshal(b, &obj); err != nil {
 		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
 			r.conditionStatus(false),
@@ -403,15 +404,15 @@ func (r *StatusReconciler) reconcileTasksStatus(ctx context.Context, pipeline *c
 		return true, err
 	}
 
-	var obj client.Object
-	fileErrors := make([]string, 10)
-	unmarshalErrors := make([]string, 10)
-	getErrors := make([]string, 10)
+	var obj = new(tekton.Task)
+	fileErrors := make([]string, 0, 10)
+	unmarshalErrors := make([]string, 0, 10)
+	getErrors := make([]string, 0, 10)
 	for _, entry := range directory {
 		if entry.IsDir() {
 			continue
 		}
-		b, err := os.ReadFile(entry.Name())
+		b, err := os.ReadFile(filepath.Join(fileName, entry.Name()))
 		if err != nil {
 			fileErrors = append(fileErrors, entry.Name())
 			continue
