@@ -65,26 +65,34 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, pipeline *certv1alpha1
 	var requeue bool
 	var err error
 
+	// No matter what, try to commit the current status.
+	// Even though defer evaluates the args here, this works since pipeline is a pointer
+	defer r.commitStatus(ctx, pipeline, log)
+
 	requeue, err = r.reconcilePipelineGitRepoStatus(ctx, pipeline)
 	if requeue || err != nil {
+		log.Error(err, "pipelineGitRepoStatus")
 		return requeue, err
 	}
 
 	kubeconfigSecret := overrideSecretFromSpec(defaultKubeconfigSecretName, pipeline.Spec.KubeconfigSecretName)
 	requeue, err = r.reconcileSecretStatus(ctx, pipeline, "KubeconfigSecret", kubeconfigSecret, defaultKubeconfigSecretKeyName)
 	if requeue || err != nil {
+		log.Error(err, "kubeconfigSecretStatus")
 		return requeue, err
 	}
 
 	githubApiSecret := overrideSecretFromSpec(defaultGithubApiSecretName, pipeline.Spec.GitHubSecretName)
 	requeue, err = r.reconcileSecretStatus(ctx, pipeline, "GithubApiSecret", githubApiSecret, defaultGithubApiSecretKeyName)
 	if requeue || err != nil {
+		log.Error(err, "githubApiSecretStatus")
 		return requeue, err
 	}
 
 	if len(pipeline.Spec.GithubSSHSecretName) > 0 {
 		requeue, err = r.reconcileSecretStatus(ctx, pipeline, "GithubSSHSecret", pipeline.Spec.GithubSSHSecretName, defaultGithubSSHSecretKeyName)
 		if requeue || err != nil {
+			log.Error(err, "githubSSHSecretStatus")
 			return requeue, err
 		}
 	}
@@ -92,44 +100,52 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, pipeline *certv1alpha1
 	pyxisApiSecret := overrideSecretFromSpec(defaultPyxisApiSecretName, pipeline.Spec.PyxisSecretName)
 	requeue, err = r.reconcileSecretStatus(ctx, pipeline, "PyxisApiSecret", pyxisApiSecret, defaultPyxisApiSecretKeyName)
 	if requeue || err != nil {
+		log.Error(err, "pyxisApiSecretStatus")
 		return requeue, err
 	}
 
 	if len(pipeline.Spec.DockerRegistrySecretName) > 0 {
 		requeue, err = r.reconcileSecretStatus(ctx, pipeline, "DockerRegistrySecret", pipeline.Spec.DockerRegistrySecretName, defaultDockerRegistrySecretKeyName)
 		if requeue || err != nil {
+			log.Error(err, "dockerRegistrySecretStatus")
 			return requeue, err
 		}
 	}
 
 	requeue, err = r.reconcilePipelineStatus(ctx, pipeline, "CIPipeline", operatorCIPipelineYml, pipeline.Spec.ApplyCIPipeline)
 	if requeue || err != nil {
+		log.Error(err, "ciPipelineStatus")
 		return requeue, err
 	}
 
 	requeue, err = r.reconcilePipelineStatus(ctx, pipeline, "HostedPipeline", operatorHostedPipelineYml, pipeline.Spec.ApplyHostedPipeline)
 	if requeue || err != nil {
+		log.Error(err, "hostedPipelineStatus")
 		return requeue, err
 	}
 
 	requeue, err = r.reconcilePipelineStatus(ctx, pipeline, "ReleasePipeline", operatorReleasePipelineYml, pipeline.Spec.ApplyReleasePipeline)
 	if requeue || err != nil {
+		log.Error(err, "releasePipelineStatus")
 		return requeue, err
 	}
 
 	// TODO(bpc): Task status
 	requeue, err = r.reconcileTasksStatus(ctx, pipeline)
 	if requeue || err != nil {
+		log.Error(err, "tasksStatus")
 		return requeue, err
 	}
 
 	requeue, err = r.reconcileImageStreamStatus(ctx, pipeline, "CertifiedIndex", certifiedIndex)
 	if requeue || err != nil {
+		log.Error(err, "certifiedIndexStatus")
 		return requeue, err
 	}
 
 	requeue, err = r.reconcileImageStreamStatus(ctx, pipeline, "MarketplaceIndex", marketplaceIndex)
 	if requeue || err != nil {
+		log.Error(err, "marketplaceIndexStatus")
 		return requeue, err
 	}
 
@@ -137,22 +153,21 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, pipeline *certv1alpha1
 		return false, nil
 	}
 
-	return r.commitStatus(ctx, pipeline, log)
+	return false, nil
 }
 
-func (r *StatusReconciler) commitStatus(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline, log logr.Logger) (bool, error) {
+func (r *StatusReconciler) commitStatus(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline, log logr.Logger) {
 	err := r.Client.Status().Update(ctx, pipeline, &client.UpdateOptions{})
 	if err != nil && apierrors.IsConflict(err) {
-		log.Info("conflict updating status, requeuing")
-		return true, nil
+		log.Info("conflict updating status")
+		return
 	}
 	if err != nil {
 		log.Error(err, "error updating status")
-		return true, err
+		return
 	}
 
 	log.Info("updated status")
-	return false, nil
 }
 
 func (r *StatusReconciler) setStatusInfo(status v1.ConditionStatus, reason string, message string, condition v1.Condition) v1.Condition {
@@ -191,10 +206,7 @@ func (r *StatusReconciler) reconcileImageStreamStatus(ctx context.Context, pipel
 			"NotFound",
 			fmt.Sprintf("%s with name %s not found", indexType, indexName),
 			readyCondition))
-		requeue, err := r.commitStatus(ctx, pipeline, log)
-		if requeue || err != nil {
-			return requeue, err
-		}
+		return true, err
 	}
 
 	meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
@@ -376,7 +388,7 @@ func (r *StatusReconciler) reconcilePipelineStatus(ctx context.Context, pipeline
 
 func (r *StatusReconciler) reconcileTasksStatus(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) (bool, error) {
 	readyCondition := v1.Condition{
-		Type:               fmt.Sprintf("TasksReady"),
+		Type:               "TasksReady",
 		ObservedGeneration: pipeline.Generation,
 		Status:             v1.ConditionUnknown,
 	}
