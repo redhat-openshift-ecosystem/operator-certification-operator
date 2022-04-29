@@ -64,7 +64,7 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	reconcilers := []reconcilers.Reconciler{
+	resourceReconcilers := []reconcilers.Reconciler{
 		reconcilers.NewPipelineGitRepoReconciler(r.Client, reqLogger, r.Scheme),
 		reconcilers.NewPipeDependenciesReconciler(r.Client, reqLogger, r.Scheme),
 		reconcilers.NewCertifiedImageStreamReconciler(r.Client, reqLogger, r.Scheme),
@@ -73,17 +73,21 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	requeueResult := false
+	errResult := make([]error, 0, len(resourceReconcilers))
 	pipeline := currentPipeline.DeepCopy()
-	for _, r := range reconcilers {
+	for _, r := range resourceReconcilers {
 		requeue, err := r.Reconcile(ctx, pipeline)
 		if err != nil {
 			log.Error(err, "requeuing with error")
-			return ctrl.Result{Requeue: true}, err
+			requeueResult = true
+			errResult = append(errResult, err)
+			continue
 		}
 		requeueResult = requeueResult || requeue
 	}
 
-	return ctrl.Result{Requeue: requeueResult}, nil
+	// Just return the first error reported. It's the most likely issue that needs to be solved.
+	return ctrl.Result{Requeue: requeueResult}, errResult[0]
 }
 
 // SetupWithManager sets up the controller with the Manager.
