@@ -29,7 +29,7 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/redhat-openshift-ecosystem/operator-certification-operator
     support: Red Hat
-  name: operator-certification-operator.v1.0.1
+  name: operator-certification-operator.v1.0.2
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -109,7 +109,6 @@ spec:
     ```
 
     - Optional pipeline configurations can be found [here](https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#optional-configuration)
-
 
 
     **Execute the Pipeline (Development Iterations)**
@@ -326,7 +325,7 @@ spec:
                 env:
                 - name: GIT_REPO_PATH
                   value: /git
-                image: quay.io/opdev/operator-certification-operator:1.0.1
+                image: quay.io/opdev/operator-certification-operator:1.0.2
                 imagePullPolicy: Always
                 livenessProbe:
                   httpGet:
@@ -420,4 +419,4 @@ spec:
   minKubeVersion: 1.21.0
   provider:
     name: Red Hat
-  version: 1.0.1
+  version: 1.0.2
