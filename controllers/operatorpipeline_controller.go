@@ -73,21 +73,20 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	requeueResult := false
-	errResult := make([]error, 0, len(resourceReconcilers))
+	var errResult error = nil
 	pipeline := currentPipeline.DeepCopy()
 	for _, r := range resourceReconcilers {
 		requeue, err := r.Reconcile(ctx, pipeline)
-		if err != nil {
+		if err != nil && errResult == nil {
+			// Only capture the first error
 			log.Error(err, "requeuing with error")
-			requeueResult = true
-			errResult = append(errResult, err)
-			continue
+			errResult = err
 		}
 		requeueResult = requeueResult || requeue
 	}
 
 	// Just return the first error reported. It's the most likely issue that needs to be solved.
-	return ctrl.Result{Requeue: requeueResult}, errResult[0]
+	return ctrl.Result{Requeue: requeueResult}, errResult
 }
 
 // SetupWithManager sets up the controller with the Manager.
