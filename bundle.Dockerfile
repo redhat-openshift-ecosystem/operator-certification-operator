@@ -16,7 +16,7 @@ LABEL operators.operatorframework.io.test.mediatype.v1=scorecard+v1
 LABEL operators.operatorframework.io.test.config.v1=tests/scorecard/
 
 # OpenShift annotations.
-LABEL com.redhat.openshift.versions="v4.7-v4.10"
+LABEL com.redhat.openshift.versions="v4.8-v4.10"
 
 # Copy files to locations specified by labels.
 COPY bundle/manifests /manifests/
