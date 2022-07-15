@@ -2,45 +2,38 @@ name: Build Main
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, ghactions ]
 
 jobs:
   build-main:
     name: Build and push a main snapshot image
     runs-on: ubuntu-18.04
-    env:
-      IMAGE_REGISTRY: quay.io/opdev
     steps:
     - uses: actions/checkout@v2
     - name: Fetch latest release version
       uses: reloc8/action-latest-release-version@1.0.0
       id: fetch-latest-release
     - name: Set Env Tags
-      run: echo RELEASE_TAG=${{ steps.fetch-latest-release.outputs.latest-release }} >> $GITHUB_ENV
+      run: echo RELEASE_TAG=${{ steps.fetch-latest-release.outputs.latest-release }}-alpha >> $GITHUB_ENV
     - name: Set a default if release tag is empty
       if: ${{ steps.fetch-latest-release.outputs.latest-release }} == ""
       run: echo RELEASE_TAG=0.0.0 >> $GITHUB_ENV
+    - name: Set image registry env
+      run: |
+        echo IMAGE_REGISTRY=$(echo ${{ secrets.IMAGE_REGISTRY }} | cut -d '/' -f 1) >> $GITHUB_ENV
+        echo IMAGE_REPO=$(echo ${{ secrets.IMAGE_REGISTRY }} | cut -d '/' -f 2) >> $GITHUB_ENV
 
     - name: Build Operator Image
       id: build-operator-image
       uses: redhat-actions/buildah-build@v2
       with:
-        image: ${{ env.IMAGE_REGISTRY }}/operator-certification-operator
+        image: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_REPO }}/operator-certification-operator
         tags: ${{ github.sha }} latest
         build-args: |
           quay_expiration=1w
-          release_tag=${{ env.RELEASE_TAG }}-alpha
+          release_tag=${{ env.RELEASE_TAG }}
         dockerfiles: |
           ./Dockerfile
-
-    - name: Build Bundle Image
-      id: build-bundle-image
-      uses: redhat-actions/buildah-build@v2
-      with:
-        image: ${{ env.IMAGE_REGISTRY }}/operator-certification-operator-bundle
-        tags: latest
-        dockerfiles: |
-          ./bundle.Dockerfile
 
     - name: Push Operator Image
       id: push-operator-image
@@ -48,17 +41,35 @@ jobs:
       with:
         image: operator-certification-operator
         tags: ${{ steps.build-operator-image.outputs.tags }}
-        registry: ${{ env.IMAGE_REGISTRY }}
+        registry: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_REPO }}
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
-    
+
+    - name: Build Bundle
+      id: build-bundle
+      run: |
+        IMAGE_REGISTRY=${{ env.IMAGE_REGISTRY }} \
+        IMAGE_REPO=${{ env.IMAGE_REPO }} \
+        RELEASE_TAG=${{ env.RELEASE_TAG }} \
+        VERSION=${{ env.RELEASE_TAG }} \
+        make bundle
+
+    - name: Build Bundle Image
+      id: build-bundle-image
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_REPO }}/operator-certification-operator-bundle
+        tags: latest
+        dockerfiles: |
+          ./bundle.Dockerfile
+
     - name: Push Bundle Image
       id: push-bundle-image
       uses: redhat-actions/push-to-registry@v2
       with:
         image: operator-certification-operator-bundle
         tags: ${{ steps.build-bundle-image.outputs.tags }}
-        registry: ${{ env.IMAGE_REGISTRY }}
+        registry: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_REPO }}
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
 

@@ -17,7 +17,7 @@ jobs:
       with:
         fetch-depth: 0
 
-    - run: sudo rm -rf /usr/local/bin/kustomize
+    - run: sudo rm -f /usr/local/bin/kustomize
 
     - name: Generate
       run: make generate && git diff --exit-code
