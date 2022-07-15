@@ -6,8 +6,8 @@ IMAGE_BUILDER ?= podman
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 SHAVERSION=$(shell git rev-parse HEAD)
-VERSION ?="latest"
-RELEASE_TAG ?= "0.0.0"
+VERSION ?="0.0.0"
+RELEASE_TAG ?= "latest"
 CHANNELS="alpha"
 DEFAULT_CHANNEL="alpha"
 IMAGE_REGISTRY ?= "quay.io"
@@ -42,7 +42,7 @@ IMAGE_TAG_BASE ?= $(IMAGE_REGISTRY)/$(IMAGE_REPO)/$(IMAGE_NAME)
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
-BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:$(VERSION)
+BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:$(RELEASE_TAG)
 
 # BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command
 BUNDLE_GEN_FLAGS ?= -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
@@ -56,7 +56,7 @@ ifeq ($(USE_IMAGE_DIGESTS), true)
 endif
 
 # Image URL to use all building/pushing image targets
-IMG ?= $(IMAGE_TAG_BASE):$(VERSION)
+IMG ?= $(IMAGE_TAG_BASE):$(RELEASE_TAG)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.24
 
@@ -119,7 +119,7 @@ test: manifests generate fmt vet envtest ## Run tests.
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	go build -a -o bin/manager -ldflags "-X github.com/redhat-openshift-ecosystem/operator-certification-operator/version.commit=$(SHAVERSION) -X github.com/redhat-openshift-ecosystem/operator-certification-operator/version.version=$(RELEASE_TAG)" main.go
+	go build -a -o bin/manager -ldflags "-X github.com/redhat-openshift-ecosystem/operator-certification-operator/version.commit=$(SHAVERSION) -X github.com/redhat-openshift-ecosystem/operator-certification-operator/version.version=$(VERSION)" main.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
@@ -204,7 +204,7 @@ $(OPERATOR_SDK): $(LOCALBIN)
 bundle: manifests kustomize operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_METADATA_OPTS)
+	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 	$(OPERATOR_SDK) bundle validate ./bundle
 
 .PHONY: bundle-build
@@ -237,7 +237,7 @@ endif
 BUNDLE_IMGS ?= $(BUNDLE_IMG)
 
 # The image tag given to the resulting catalog image (e.g. make catalog-build CATALOG_IMG=example.com/operator-catalog:v0.2.0).
-CATALOG_IMG ?= $(IMAGE_TAG_BASE)-catalog:$(VERSION)
+CATALOG_IMG ?= $(IMAGE_TAG_BASE)-catalog:$(RELEASE_TAG)
 
 # Set CATALOG_BASE_IMG to an existing catalog image tag to add $BUNDLE_IMGS to that image.
 ifneq ($(origin CATALOG_BASE_IMG), undefined)

@@ -25,3 +25,10 @@ vendor/
 
 # MacOS related artifacts
 .DS_Store
+
+# Bundle metadata
+bundle/manifests/
+bundle/tests/
+bundle/metadata/annotations.yaml
+bundle.Dockerfile
+

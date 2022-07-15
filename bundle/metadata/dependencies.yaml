@@ -2,4 +2,4 @@ dependencies:
   - type: olm.package
     value:
       packageName: openshift-pipelines-operator-rh
-      version: "1.5.2"
+      version: "1.7.1"
