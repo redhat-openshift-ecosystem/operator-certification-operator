@@ -24,7 +24,7 @@ COPY internal/ internal/
 COPY .git .git
 
 # Build
-RUN make build RELEASE_TAG=${release_tag}
+RUN make build VERSION=${release_tag}
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 
