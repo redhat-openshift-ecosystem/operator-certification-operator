@@ -55,8 +55,8 @@ jobs:
     - name: Add OpenShift metadata to bundle
       id: add-openshift-metadata
       run: |
-        echo '  com.redhat.openshift.versions: "v4.8-v4.10"' >> bundle/annotations.yaml
-        echo 'LABEL com.redhat.openshift.versions="v4.8-v4.10"' >> bundle.Dockerfile
+        echo '  com.redhat.openshift.versions: "v4.8"' >> bundle/annotations.yaml
+        echo 'LABEL com.redhat.openshift.versions="v4.8"' >> bundle.Dockerfile
 
     - name: Build Bundle Image
       id: build-bundle-image
