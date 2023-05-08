@@ -24,18 +24,18 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	imagev1 "github.com/openshift/api/image/v1"
+	securityv1 "github.com/openshift/api/security/v1"
+	operatorsv1a1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	certificationv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/controllers"
+	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	imagev1 "github.com/openshift/api/image/v1"
-	operatorsv1a1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	certificationv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
-	"github.com/redhat-openshift-ecosystem/operator-certification-operator/controllers"
-	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -51,6 +51,9 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 
 	utilruntime.Must(tekton.AddToScheme(scheme))
+	//+kubebuilder:scaffold:scheme
+
+	utilruntime.Must(securityv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

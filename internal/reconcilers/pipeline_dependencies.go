@@ -6,10 +6,15 @@ import (
 	"os"
 	"path/filepath"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/logr"
+	securityv1 "github.com/openshift/api/security/v1"
 	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -22,6 +27,11 @@ const (
 	operatorCIPipelineYml      = "operator-ci-pipeline.yml"
 	operatorHostedPipelineYml  = "operator-hosted-pipeline.yml"
 	operatorReleasePipelineYml = "operator-release-pipeline.yml"
+	clusterRoleYml             = "openshift-pipeline-sa-scc-role.yml"
+	clusterRoleBindingYml      = "openshift-pipeline-sa-scc-role-bindings.yml"
+	sccYml                     = "openshift-pipelines-custom-scc.yml"
+	ClusterResourceLabel       = "operatorpipelines.certification.redhat.com/cluster-resource"
+	NamespaceLabel             = "operatorpipelines.certification.redhat.com/metadata.name"
 )
 
 var (
@@ -82,10 +92,30 @@ func (r *PipelineDependenciesReconciler) Reconcile(ctx context.Context, pipeline
 
 	for _, task := range tasks {
 		if !task.IsDir() {
-			if err := r.applyManifests(ctx, filepath.Join(taskManifestsPath, task.Name()), pipeline, new(tekton.Task)); err != nil {
+			if err := r.applyManifests(ctx, filepath.Join(taskManifestsPath, task.Name()), pipeline, new(tekton.Task), false); err != nil {
 				return true, err
 			}
 		}
+	}
+
+	if err := r.applyManifests(ctx, filepath.Join(gitPath, baseManifestsPath, sccYml), pipeline, new(securityv1.SecurityContextConstraints), true); err != nil {
+		return true, err
+	}
+
+	if err := r.applyManifests(ctx, filepath.Join(gitPath, baseManifestsPath, clusterRoleYml), pipeline, new(rbacv1.ClusterRole), true); err != nil {
+		return true, err
+	}
+
+	// apply the cluster role binding with modifications below
+	tmpFile, err := r.modifyAndSaveTempClusterRoleBinding(ctx, filepath.Join(gitPath, baseManifestsPath, clusterRoleBindingYml), pipeline, new(rbacv1.ClusterRoleBinding))
+	if err != nil {
+		return true, err
+
+	}
+	defer os.Remove(tmpFile)
+
+	if err := r.applyManifests(ctx, tmpFile, pipeline, new(rbacv1.ClusterRoleBinding), true); err != nil {
+		return true, err
 	}
 
 	return false, nil
@@ -93,12 +123,12 @@ func (r *PipelineDependenciesReconciler) Reconcile(ctx context.Context, pipeline
 
 func (r *PipelineDependenciesReconciler) applyOrDeletePipeline(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline, applyManifest bool, yamlPath string) error {
 	if applyManifest {
-		return r.applyManifests(ctx, yamlPath, pipeline, new(tekton.Pipeline))
+		return r.applyManifests(ctx, yamlPath, pipeline, new(tekton.Pipeline), false)
 	}
 	return r.deleteManifests(ctx, yamlPath, pipeline, new(tekton.Pipeline))
 }
 
-func (r *PipelineDependenciesReconciler) applyManifests(ctx context.Context, fileName string, owner, obj client.Object) error {
+func (r *PipelineDependenciesReconciler) applyManifests(ctx context.Context, fileName string, owner, obj client.Object, addClusterResourceLabel bool) error {
 	log := r.Log.WithName("applyManifests")
 
 	b, err := os.ReadFile(fileName)
@@ -110,6 +140,19 @@ func (r *PipelineDependenciesReconciler) applyManifests(ctx context.Context, fil
 	if err = yamlutil.Unmarshal(b, &obj); err != nil {
 		log.Error(err, fmt.Sprintf("Couldn't unmarshall yaml file for: %s", fileName))
 		return err
+	}
+
+	// adding cluster resource label for scc, clusterrole, clusterrolebinding, this is so they can be selected
+	// by label on deletion
+	if addClusterResourceLabel {
+		labels := obj.GetLabels()
+		if labels == nil {
+			labels = make(map[string]string)
+		}
+
+		labels[ClusterResourceLabel] = "true"
+
+		obj.SetLabels(labels)
 	}
 
 	obj.SetNamespace(owner.GetNamespace())
@@ -162,4 +205,53 @@ func (r *PipelineDependenciesReconciler) deleteManifests(ctx context.Context, fi
 	}
 
 	return nil
+}
+
+func (r *PipelineDependenciesReconciler) modifyAndSaveTempClusterRoleBinding(_ context.Context, fileName string, owner, obj client.Object) (string, error) {
+	log := r.Log.WithName("modifyAndSaveTempClusterRoleBinding")
+
+	b, err := os.ReadFile(fileName)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("Couldn't read manifest file for: %s", fileName))
+		return "", err
+	}
+
+	if err = yamlutil.Unmarshal(b, &obj); err != nil {
+		log.Error(err, fmt.Sprintf("Couldn't unmarshal yaml file for: %s", fileName))
+		return "", err
+	}
+
+	// type asserting to ensure proper kind inorder to update specific values before updating/creating in cluster
+	crb, ok := obj.(*rbacv1.ClusterRoleBinding)
+	if !ok {
+		return "", fmt.Errorf("could not type assert client.Object as ClusterRoleBinding")
+	}
+
+	// updating the below values, since the yaml read in is templated and incomplete
+	crb.Name = fmt.Sprintf("pipeline-%s-pipelines-custom-scc", owner.GetNamespace())
+	crb.Subjects[0].Namespace = owner.GetNamespace()
+
+	// adding additional label so it can be selected by label on deletion
+	metav1.SetMetaDataLabel(&crb.ObjectMeta, NamespaceLabel, owner.GetNamespace())
+
+	b, err = yaml.Marshal(crb)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("Couldn't marshal ClusterRoleBinding for: %s", fileName))
+		return "", err
+	}
+
+	// creating temp file in a temp directory
+	tmpFile, err := os.CreateTemp("", "cluster-role-binding-*.yaml")
+	if err != nil {
+		log.Error(err, fmt.Sprintf("Couldn't create temp file for: %s", fileName))
+		return "", err
+	}
+
+	_, err = tmpFile.Write(b)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("Couldn't write manifest file for: %s", fileName))
+		return "", err
+	}
+
+	return tmpFile.Name(), nil
 }
