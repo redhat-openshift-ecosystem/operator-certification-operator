@@ -1,0 +1,67 @@
+run:
+  # Default timeout is 1m, up to give more room
+  timeout: 4m
+
+linters:
+  enable:
+  - asciicheck
+  - deadcode
+  - depguard
+  - gofumpt
+  - goimports
+  - importas
+  - revive
+  - misspell
+  - stylecheck
+  - tparallel
+  - unconvert
+  - unparam
+  - whitespace
+
+linters-settings:
+  importas:
+    alias:
+    - pkg: k8s.io/api/core/v1
+      alias: corev1
+    - pkg: k8s.io/api/rbac/v1
+      alias: rbacv1
+    - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
+      alias: metav1
+    - pkg: k8s.io/apimachinery/pkg/api/errors
+      alias: apierrors
+    - pkg: sigs.k8s.io/controller-runtime
+      alias: ctrl
+    - pkg: sigs.k8s.io/controller-runtime/pkg/log
+      alias: logf
+    - pkg: k8s.io/apimachinery/pkg/util/runtime
+      alias: utilruntime
+    - pkg: k8s.io/client-go/kubernetes/scheme
+      alias: clientgoscheme
+    - pkg: k8s.io/apimachinery/pkg/util/yaml
+      alias: yamlutil
+    - pkg: github.com/operator-framework/api/pkg/operators/v1alpha1
+      alias: operatorsv1a1
+    - pkg: github.com/openshift/api/image/v1
+      alias: imagev1
+    - pkg: github.com/openshift/api/security/v1
+      alias: securityv1
+    - pkg: github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1
+      alias: tekton
+    - pkg: github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1
+      alias: certv1alpha1
+
+  revive:
+    rules:
+    - name: dot-imports
+      severity: warning
+      disabled: true
+  stylecheck:
+    dot-import-whitelist:
+      - github.com/onsi/gomega
+      - github.com/onsi/ginkgo
+      - github.com/onsi/ginkgo/v2
+  goimports:
+    local-prefixes: github.com/redhat-openshift-ecosystem/operator-certification-operator
+
+output:
+  format: tab

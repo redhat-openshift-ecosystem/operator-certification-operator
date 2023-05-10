@@ -19,11 +19,12 @@ package controllers
 import (
 	"context"
 
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/reconcilers"
+
 	"github.com/go-logr/logr"
 	imagev1 "github.com/openshift/api/image/v1"
 	securityv1 "github.com/openshift/api/security/v1"
-	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
-	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/reconcilers"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -61,7 +62,7 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	reqLogger := logf.FromContext(ctx, "Request.Namespace", req.Namespace, "Request.Name", req.Name)
 	reqLogger.Info("Reconciling OperatorPipeline")
 
-	currentPipeline := &certv1alpha1.OperatorPipeline{}
+	currentPipeline := &v1alpha1.OperatorPipeline{}
 	err := r.Client.Get(ctx, req.NamespacedName, currentPipeline)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -77,7 +78,7 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	isOperatorPipelineMarkedToBeDeleted := currentPipeline.GetDeletionTimestamp() != nil
 	if isOperatorPipelineMarkedToBeDeleted {
 		if controllerutil.ContainsFinalizer(currentPipeline, operatorPipelineFinalizer) {
-			namespacePipelines := &certv1alpha1.OperatorPipelineList{}
+			namespacePipelines := &v1alpha1.OperatorPipelineList{}
 
 			// creating listOptions inorder to know the number of OperatorPipeline resources in the given namespace
 			// if last CR in namespace we can remove the ClusterRoleBinding associated with the namespace
@@ -94,7 +95,7 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 				}
 			}
 
-			clusterPipelines := &certv1alpha1.OperatorPipelineList{}
+			clusterPipelines := &v1alpha1.OperatorPipelineList{}
 			// not creating listOptions since we want to know the total number of OperatorPipelines in the entire cluster
 			// if last CR in cluster we can remove the SCC and ClusterRole
 			if err := r.Client.List(ctx, clusterPipelines); err != nil {
@@ -209,7 +210,7 @@ func (r *OperatorPipelineReconciler) deleteClusterRoleBinding(ctx context.Contex
 // SetupWithManager sets up the controller with the Manager.
 func (r *OperatorPipelineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&certv1alpha1.OperatorPipeline{}).
+		For(&v1alpha1.OperatorPipeline{}).
 		Owns(&corev1.Secret{}).
 		Owns(&imagev1.ImageStream{}).
 		Owns(&tekton.Pipeline{}).

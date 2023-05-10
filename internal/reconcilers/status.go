@@ -7,17 +7,18 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/errors"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/logr"
 	imagev1 "github.com/openshift/api/image/v1"
-	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
-	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/errors"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
@@ -27,10 +28,10 @@ import (
 const (
 	defaultKubeconfigSecretName        = "kubeconfig"
 	defaultKubeconfigSecretKeyName     = "kubeconfig"
-	defaultGithubApiSecretName         = "github-api-token"
-	defaultGithubApiSecretKeyName      = "GITHUB_TOKEN"
-	defaultPyxisApiSecretName          = "pyxis-api-secret"
-	defaultPyxisApiSecretKeyName       = "pyxis_api_key"
+	defaultGithubAPISecretName         = "github-api-token"
+	defaultGithubAPISecretKeyName      = "GITHUB_TOKEN"
+	defaultPyxisAPISecretName          = "pyxis-api-secret"
+	defaultPyxisAPISecretKeyName       = "pyxis_api_key"
 	defaultDockerRegistrySecretKeyName = ".dockerconfigjson"
 	defaultGithubSSHSecretKeyName      = "id_rsa"
 )
@@ -56,7 +57,7 @@ func overrideSecretFromSpec(secretDefault, spec string) string {
 	return secretDefault
 }
 
-func (r *StatusReconciler) Reconcile(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) (bool, error) {
+func (r *StatusReconciler) Reconcile(ctx context.Context, pipeline *v1alpha1.OperatorPipeline) (bool, error) {
 	origPipeline := pipeline.DeepCopy()
 	pipeline.Status.ObservedGeneration = pipeline.Generation
 	log := r.Log.WithValues("status.observedGeneration", pipeline.Generation)
@@ -82,8 +83,8 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, pipeline *certv1alpha1
 		return requeue, err
 	}
 
-	githubApiSecret := overrideSecretFromSpec(defaultGithubApiSecretName, pipeline.Spec.GitHubSecretName)
-	requeue, err = r.reconcileSecretStatus(ctx, pipeline, "GithubApiSecret", githubApiSecret, defaultGithubApiSecretKeyName)
+	githubAPISecret := overrideSecretFromSpec(defaultGithubAPISecretName, pipeline.Spec.GitHubSecretName)
+	requeue, err = r.reconcileSecretStatus(ctx, pipeline, "GithubApiSecret", githubAPISecret, defaultGithubAPISecretKeyName)
 	if requeue || err != nil {
 		log.Error(err, "githubApiSecretStatus")
 		return requeue, err
@@ -97,8 +98,8 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, pipeline *certv1alpha1
 		}
 	}
 
-	pyxisApiSecret := overrideSecretFromSpec(defaultPyxisApiSecretName, pipeline.Spec.PyxisSecretName)
-	requeue, err = r.reconcileSecretStatus(ctx, pipeline, "PyxisApiSecret", pyxisApiSecret, defaultPyxisApiSecretKeyName)
+	pyxisAPISecret := overrideSecretFromSpec(defaultPyxisAPISecretName, pipeline.Spec.PyxisSecretName)
+	requeue, err = r.reconcileSecretStatus(ctx, pipeline, "PyxisApiSecret", pyxisAPISecret, defaultPyxisAPISecretKeyName)
 	if requeue || err != nil {
 		log.Error(err, "pyxisApiSecretStatus")
 		return requeue, err
@@ -156,7 +157,7 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, pipeline *certv1alpha1
 	return false, nil
 }
 
-func (r *StatusReconciler) commitStatus(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline, log logr.Logger) {
+func (r *StatusReconciler) commitStatus(ctx context.Context, pipeline *v1alpha1.OperatorPipeline, log logr.Logger) {
 	err := r.Client.Status().Update(ctx, pipeline, &client.UpdateOptions{})
 	if err != nil && apierrors.IsConflict(err) {
 		log.Info("conflict updating status")
@@ -170,25 +171,25 @@ func (r *StatusReconciler) commitStatus(ctx context.Context, pipeline *certv1alp
 	log.Info("updated status")
 }
 
-func (r *StatusReconciler) setStatusInfo(status v1.ConditionStatus, reason string, message string, condition v1.Condition) v1.Condition {
+func (r *StatusReconciler) setStatusInfo(status metav1.ConditionStatus, reason string, message string, condition metav1.Condition) metav1.Condition {
 	condition.Status = status
 	condition.Reason = reason
 	condition.Message = message
 	return condition
 }
 
-func (r *StatusReconciler) conditionStatus(b bool) v1.ConditionStatus {
+func (r *StatusReconciler) conditionStatus(b bool) metav1.ConditionStatus {
 	if b {
-		return v1.ConditionTrue
+		return metav1.ConditionTrue
 	}
-	return v1.ConditionFalse
+	return metav1.ConditionFalse
 }
 
-func (r *StatusReconciler) reconcileImageStreamStatus(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline, indexType, indexName string) (bool, error) {
-	readyCondition := v1.Condition{
+func (r *StatusReconciler) reconcileImageStreamStatus(ctx context.Context, pipeline *v1alpha1.OperatorPipeline, indexType, indexName string) (bool, error) {
+	readyCondition := metav1.Condition{
 		Type:               fmt.Sprintf("%sReady", indexType),
 		ObservedGeneration: pipeline.Generation,
-		Status:             v1.ConditionUnknown,
+		Status:             metav1.ConditionUnknown,
 	}
 	log := r.Log.WithValues("status.observedGeneration", pipeline.Generation)
 
@@ -218,11 +219,11 @@ func (r *StatusReconciler) reconcileImageStreamStatus(ctx context.Context, pipel
 	return false, nil
 }
 
-func (r *StatusReconciler) reconcileSecretStatus(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline, secretType, secretName, secretKey string) (bool, error) {
-	readyCondition := v1.Condition{
+func (r *StatusReconciler) reconcileSecretStatus(ctx context.Context, pipeline *v1alpha1.OperatorPipeline, secretType, secretName, secretKey string) (bool, error) {
+	readyCondition := metav1.Condition{
 		Type:               fmt.Sprintf("%sReady", secretType),
 		ObservedGeneration: pipeline.Generation,
-		Status:             v1.ConditionUnknown,
+		Status:             metav1.ConditionUnknown,
 	}
 	log := r.Log.WithValues("status.observedGeneration", pipeline.Generation)
 	secret := &corev1.Secret{}
@@ -280,11 +281,11 @@ func (r *StatusReconciler) reconcileSecretStatus(ctx context.Context, pipeline *
 	return false, nil
 }
 
-func (r *StatusReconciler) reconcilePipelineGitRepoStatus(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) (bool, error) {
-	readyCondition := v1.Condition{
+func (r *StatusReconciler) reconcilePipelineGitRepoStatus(_ context.Context, pipeline *v1alpha1.OperatorPipeline) (bool, error) {
+	readyCondition := metav1.Condition{
 		Type:               "GitRepoReady",
 		ObservedGeneration: pipeline.Generation,
-		Status:             v1.ConditionUnknown,
+		Status:             metav1.ConditionUnknown,
 	}
 
 	repo, err := git.PlainOpen(filepath.Join(os.Getenv("GIT_REPO_PATH"), "operator-pipeline"))
@@ -317,11 +318,11 @@ func (r *StatusReconciler) reconcilePipelineGitRepoStatus(ctx context.Context, p
 	return false, nil
 }
 
-func (r *StatusReconciler) reconcilePipelineStatus(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline, pipelineType, pipelineYaml string, pipelinePresent bool) (bool, error) {
-	readyCondition := v1.Condition{
+func (r *StatusReconciler) reconcilePipelineStatus(ctx context.Context, pipeline *v1alpha1.OperatorPipeline, pipelineType, pipelineYaml string, pipelinePresent bool) (bool, error) {
+	readyCondition := metav1.Condition{
 		Type:               fmt.Sprintf("%sReady", pipelineType),
 		ObservedGeneration: pipeline.Generation,
-		Status:             v1.ConditionUnknown,
+		Status:             metav1.ConditionUnknown,
 	}
 
 	if !pipelinePresent {
@@ -356,7 +357,7 @@ func (r *StatusReconciler) reconcilePipelineStatus(ctx context.Context, pipeline
 		return true, err
 	}
 
-	var obj = new(tekton.Pipeline)
+	obj := new(tekton.Pipeline)
 	if err = yamlutil.Unmarshal(b, &obj); err != nil {
 		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
 			r.conditionStatus(false),
@@ -386,11 +387,11 @@ func (r *StatusReconciler) reconcilePipelineStatus(ctx context.Context, pipeline
 	return false, nil
 }
 
-func (r *StatusReconciler) reconcileTasksStatus(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) (bool, error) {
-	readyCondition := v1.Condition{
+func (r *StatusReconciler) reconcileTasksStatus(ctx context.Context, pipeline *v1alpha1.OperatorPipeline) (bool, error) {
+	readyCondition := metav1.Condition{
 		Type:               "TasksReady",
 		ObservedGeneration: pipeline.Generation,
-		Status:             v1.ConditionUnknown,
+		Status:             metav1.ConditionUnknown,
 	}
 
 	gitPath := filepath.Join(os.Getenv("GIT_REPO_PATH"), "operator-pipeline")
@@ -416,7 +417,7 @@ func (r *StatusReconciler) reconcileTasksStatus(ctx context.Context, pipeline *c
 		return true, err
 	}
 
-	var obj = new(tekton.Task)
+	obj := new(tekton.Task)
 	fileErrors := make([]string, 0, 10)
 	unmarshalErrors := make([]string, 0, 10)
 	getErrors := make([]string, 0, 10)
