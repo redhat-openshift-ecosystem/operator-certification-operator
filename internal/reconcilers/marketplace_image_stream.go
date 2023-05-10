@@ -3,10 +3,11 @@ package reconcilers
 import (
 	"context"
 
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/objects"
+
 	"github.com/go-logr/logr"
 	imagev1 "github.com/openshift/api/image/v1"
-	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
-	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/objects"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -32,7 +33,7 @@ func NewMarketplaceImageStreamReconciler(client client.Client, log logr.Logger, 
 }
 
 // reconcileMarketplaceImageStream will ensure that the Red Hat Marketplace ImageStream is present and up to date.
-func (r *MarketplaceImageStreamReconciler) Reconcile(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) (bool, error) {
+func (r *MarketplaceImageStreamReconciler) Reconcile(ctx context.Context, pipeline *v1alpha1.OperatorPipeline) (bool, error) {
 	key := types.NamespacedName{
 		Namespace: pipeline.Namespace,
 		Name:      marketplaceIndex,

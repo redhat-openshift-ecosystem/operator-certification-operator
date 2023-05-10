@@ -39,5 +39,17 @@ jobs:
     - name: Manifests
       run: make manifests && git diff --exit-code
 
+    - name: Tidy
+      run: make tidy
+
+    - name: Vet
+      run: make vet
+
+    - name: Format
+      run: make fmt
+
+    - name: Run golangci linting checks
+      run: make lint
+
     - name: Test
       run: make test

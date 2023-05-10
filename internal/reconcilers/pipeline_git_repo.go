@@ -6,11 +6,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/errors"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-logr/logr"
-	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
-	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -33,7 +34,7 @@ func NewPipelineGitRepoReconciler(client client.Client, log logr.Logger, scheme 
 	}
 }
 
-func (r *PipelineGitRepoReconciler) Reconcile(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) (bool, error) {
+func (r *PipelineGitRepoReconciler) Reconcile(_ context.Context, pipeline *v1alpha1.OperatorPipeline) (bool, error) {
 	log := r.Log.WithName("gitrepo")
 	gitMount, ok := os.LookupEnv("GIT_REPO_PATH")
 	if !ok {

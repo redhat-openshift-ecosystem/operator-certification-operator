@@ -6,21 +6,21 @@ import (
 	"os"
 	"path/filepath"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/yaml"
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/logr"
 	securityv1 "github.com/openshift/api/security/v1"
-	certv1alpha1 "github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -54,7 +54,7 @@ func NewPipeDependenciesReconciler(client client.Client, log logr.Logger, scheme
 	}
 }
 
-func (r *PipelineDependenciesReconciler) Reconcile(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline) (bool, error) {
+func (r *PipelineDependenciesReconciler) Reconcile(ctx context.Context, pipeline *v1alpha1.OperatorPipeline) (bool, error) {
 	// Cloning operator-pipelines project to retrieve pipelines and tasks
 	// yaml manifests that need to be applied beforehand
 	// ref: https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#step-6---install-the-certification-pipeline-and-dependencies-into-the-cluster
@@ -110,7 +110,6 @@ func (r *PipelineDependenciesReconciler) Reconcile(ctx context.Context, pipeline
 	tmpFile, err := r.modifyAndSaveTempClusterRoleBinding(ctx, filepath.Join(gitPath, baseManifestsPath, clusterRoleBindingYml), pipeline, new(rbacv1.ClusterRoleBinding))
 	if err != nil {
 		return true, err
-
 	}
 	defer os.Remove(tmpFile)
 
@@ -121,7 +120,7 @@ func (r *PipelineDependenciesReconciler) Reconcile(ctx context.Context, pipeline
 	return false, nil
 }
 
-func (r *PipelineDependenciesReconciler) applyOrDeletePipeline(ctx context.Context, pipeline *certv1alpha1.OperatorPipeline, applyManifest bool, yamlPath string) error {
+func (r *PipelineDependenciesReconciler) applyOrDeletePipeline(ctx context.Context, pipeline *v1alpha1.OperatorPipeline, applyManifest bool, yamlPath string) error {
 	if applyManifest {
 		return r.applyManifests(ctx, yamlPath, pipeline, new(tekton.Pipeline), false)
 	}
@@ -169,7 +168,7 @@ func (r *PipelineDependenciesReconciler) applyManifests(ctx context.Context, fil
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		controllerutil.SetControllerReference(owner, obj, r.Scheme)
+		_ = controllerutil.SetControllerReference(owner, obj, r.Scheme)
 		if err := r.Client.Create(ctx, obj); err != nil {
 			log.Error(err, fmt.Sprintf("failed to create pipeline resource for file: %s", fileName))
 			return err
