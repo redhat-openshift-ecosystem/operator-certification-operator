@@ -9,27 +9,13 @@ jobs:
     name: sanity
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/setup-go@v3
-      with:
-        go-version: 1.19
-      id: go
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    - id: go-cache-paths
-      run: |
-        echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
-        echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
-    - name: Go Build Cache
-      uses: actions/cache@v3
+    - uses: actions/setup-go@v4
       with:
-        path: ${{ steps.go-cache-paths.outputs.go-build }}
-        key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
-    - name: Go Mod Cache
-      uses: actions/cache@v3
-      with:
-        path: ${{ steps.go-cache-paths.outputs.go-mod }}
-        key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
+        go-version-file: go.mod
+      id: go
 
     - run: sudo rm -f /usr/local/bin/kustomize
 

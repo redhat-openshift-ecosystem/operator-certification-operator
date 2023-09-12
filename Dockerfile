@@ -2,7 +2,7 @@ ARG quay_expiration=never
 ARG release_tag=0.0.0
 
 # Build the manager binary
-FROM docker.io/library/golang:1.19 as builder
+FROM docker.io/library/golang:1.20 as builder
 
 ARG release_tag
 
@@ -13,11 +13,10 @@ COPY go.mod go.mod
 COPY go.sum go.sum
 
 # Copy the code
-COPY main.go main.go
+COPY cmd/main.go cmd/main.go
 COPY Makefile Makefile
 COPY hack/ hack/
 COPY api/ api/
-COPY controllers/ controllers/
 COPY internal/ internal/
 
 # Copy git repo for sha info
