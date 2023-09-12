@@ -21,7 +21,7 @@ import (
 	"os"
 
 	"github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
-	"github.com/redhat-openshift-ecosystem/operator-certification-operator/controllers"
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/controller"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -98,7 +98,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.OperatorPipelineReconciler{
+	if err = (&controller.OperatorPipelineReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {

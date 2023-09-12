@@ -158,7 +158,7 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, pipeline *v1alpha1.Ope
 }
 
 func (r *StatusReconciler) commitStatus(ctx context.Context, pipeline *v1alpha1.OperatorPipeline, log logr.Logger) {
-	err := r.Client.Status().Update(ctx, pipeline, &client.UpdateOptions{})
+	err := r.Client.Status().Update(ctx, pipeline)
 	if err != nil && apierrors.IsConflict(err) {
 		log.Info("conflict updating status")
 		return
@@ -261,7 +261,7 @@ func (r *StatusReconciler) reconcileSecretStatus(ctx context.Context, pipeline *
 			"NotFound",
 			fmt.Sprintf("%s ecret not found", secretName),
 			readyCondition))
-		err = r.Client.Status().Update(ctx, pipeline, &client.UpdateOptions{})
+		err = r.Client.Status().Update(ctx, pipeline)
 		if apierrors.IsConflict(err) {
 			log.Info("conflict updating object, requeueing")
 			return true, nil
