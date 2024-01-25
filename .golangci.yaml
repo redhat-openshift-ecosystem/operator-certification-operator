@@ -45,7 +45,7 @@ linters-settings:
       alias: imagev1
     - pkg: github.com/openshift/api/security/v1
       alias: securityv1
-    - pkg: github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1
+    - pkg: github.com/tektoncd/pipeline/pkg/apis/pipeline/v1
       alias: tekton
     - pkg: github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1
       alias: certv1alpha1
