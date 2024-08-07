@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
@@ -44,6 +45,13 @@ func (r *CertifiedImageStreamReconciler) Reconcile(ctx context.Context, pipeline
 	stream := newImageStream(key)
 	if objects.IsObjectFound(ctx, r.Client, key, stream) {
 		log.Info("existing certified image stream found")
+
+		// setting owner reference on ImageStream CR, so CR gets garbage collected on OperatorPipeline deletion.
+		// ignoring error, since we do not need/want to requeue on this failure,
+		// and this should self correct on subsequent reconciles.
+		_ = controllerutil.SetControllerReference(pipeline, stream, r.Scheme)
+		_ = r.Update(ctx, stream)
+
 		return false, nil // Existing ImageStream found, do nothing...
 	}
 
