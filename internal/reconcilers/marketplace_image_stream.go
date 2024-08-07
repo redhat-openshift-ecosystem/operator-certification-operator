@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
@@ -43,6 +44,18 @@ func (r *MarketplaceImageStreamReconciler) Reconcile(ctx context.Context, pipeli
 	stream := newImageStream(key)
 	if objects.IsObjectFound(ctx, r.Client, key, stream) {
 		log.Info("existing marketplace image stream found")
+
+		// setting owner reference on ImageStream CR, so CR gets garbage collected on OperatorPipeline deletion.
+		// ignoring error, since we do not need/want to requeue on this failure,
+		// and this should self correct on subsequent reconciles.
+		err := controllerutil.SetControllerReference(pipeline, stream, r.Scheme)
+		if err != nil {
+			log.Info("unable to set owner on marketplace image stream, "+
+				"this resource will need to be cleaned up manually on uninstall", "error", err.Error())
+			return false, nil
+		}
+		_ = r.Update(ctx, stream)
+
 		return false, nil // Existing ImageStream found, do nothing...
 	}
 
