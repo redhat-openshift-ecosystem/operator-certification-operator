@@ -9,6 +9,7 @@ require (
 	github.com/onsi/gomega v1.34.1
 	github.com/openshift/api v0.0.0-20240802200810-346347bccbc8
 	github.com/operator-framework/api v0.26.0
+	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466
 	github.com/tektoncd/pipeline v0.62.0
 	k8s.io/api v0.30.3
 	k8s.io/apimachinery v0.30.3
