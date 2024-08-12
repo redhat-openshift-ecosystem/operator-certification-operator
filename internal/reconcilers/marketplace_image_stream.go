@@ -2,9 +2,13 @@ package reconcilers
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/objects"
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/pyxis"
 
 	"github.com/go-logr/logr"
 	imagev1 "github.com/openshift/api/image/v1"
@@ -21,8 +25,9 @@ const (
 
 type MarketplaceImageStreamReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log         logr.Logger
+	Scheme      *runtime.Scheme
+	pyxisClient *pyxis.PyxisClient
 }
 
 func NewMarketplaceImageStreamReconciler(client client.Client, log logr.Logger, scheme *runtime.Scheme) *MarketplaceImageStreamReconciler {
@@ -30,11 +35,19 @@ func NewMarketplaceImageStreamReconciler(client client.Client, log logr.Logger, 
 		Client: client,
 		Log:    log,
 		Scheme: scheme,
+		pyxisClient: pyxis.NewPyxisClient(
+			pyxis.DefaultPyxisHost,
+			&http.Client{Timeout: 60 * time.Second}),
 	}
 }
 
 // reconcileMarketplaceImageStream will ensure that the Red Hat Marketplace ImageStream is present and up to date.
 func (r *MarketplaceImageStreamReconciler) Reconcile(ctx context.Context, pipeline *v1alpha1.OperatorPipeline) (bool, error) {
+	operatorIndices, err := r.pyxisClient.FindOperatorIndices(ctx, "redhat-marketplace")
+	if err != nil {
+		return true, err
+	}
+
 	key := types.NamespacedName{
 		Namespace: pipeline.Namespace,
 		Name:      marketplaceIndex,
@@ -61,18 +74,26 @@ func (r *MarketplaceImageStreamReconciler) Reconcile(ctx context.Context, pipeli
 
 	imgImport := newImageStreamImport(key)
 	imgImport.Spec.Import = true
-	imgImport.Spec.Repository = &imagev1.RepositoryImportSpec{
-		From: corev1.ObjectReference{
-			Kind: "DockerImage",
-			Name: "registry.redhat.io/redhat/redhat-marketplace-index",
-		},
-		ImportPolicy: imagev1.TagImportPolicy{
-			Scheduled: true,
-		},
-		ReferencePolicy: imagev1.TagReferencePolicy{
-			Type: imagev1.LocalTagReferencePolicy,
-		},
+
+	imageSpecs := make([]imagev1.ImageImportSpec, 0, len(operatorIndices))
+
+	for _, index := range operatorIndices {
+		imageSpec := imagev1.ImageImportSpec{
+			From: corev1.ObjectReference{
+				Kind: "DockerImage",
+				Name: fmt.Sprintf("%s:v%s", "registry.redhat.io/redhat/redhat-marketplace-index", index.OCPVersion),
+			},
+			ImportPolicy: imagev1.TagImportPolicy{
+				Scheduled: true,
+			},
+			ReferencePolicy: imagev1.TagReferencePolicy{
+				Type: imagev1.LocalTagReferencePolicy,
+			},
+		}
+		imageSpecs = append(imageSpecs, imageSpec)
 	}
+
+	imgImport.Spec.Images = imageSpecs
 
 	log.Info("creating new marketplace image stream import")
 	if err := r.Client.Create(ctx, imgImport); err != nil {

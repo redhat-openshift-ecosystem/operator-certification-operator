@@ -2,9 +2,13 @@ package reconcilers
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/objects"
+	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/pyxis"
 
 	"github.com/go-logr/logr"
 	imagev1 "github.com/openshift/api/image/v1"
@@ -22,8 +26,9 @@ const (
 
 type CertifiedImageStreamReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log         logr.Logger
+	Scheme      *runtime.Scheme
+	pyxisClient *pyxis.PyxisClient
 }
 
 func NewCertifiedImageStreamReconciler(client client.Client, log logr.Logger, scheme *runtime.Scheme) *CertifiedImageStreamReconciler {
@@ -31,11 +36,19 @@ func NewCertifiedImageStreamReconciler(client client.Client, log logr.Logger, sc
 		Client: client,
 		Log:    log,
 		Scheme: scheme,
+		pyxisClient: pyxis.NewPyxisClient(
+			pyxis.DefaultPyxisHost,
+			&http.Client{Timeout: 60 * time.Second}),
 	}
 }
 
 // reconcileCertifiedImageStream will ensure that the certified operator ImageStream is present and up to date.
 func (r *CertifiedImageStreamReconciler) Reconcile(ctx context.Context, pipeline *v1alpha1.OperatorPipeline) (bool, error) {
+	operatorIndices, err := r.pyxisClient.FindOperatorIndices(ctx, "certified-operators")
+	if err != nil {
+		return true, err
+	}
+
 	key := types.NamespacedName{
 		Namespace: pipeline.Namespace,
 		Name:      certifiedIndex,
@@ -62,18 +75,26 @@ func (r *CertifiedImageStreamReconciler) Reconcile(ctx context.Context, pipeline
 
 	imgImport := newImageStreamImport(key)
 	imgImport.Spec.Import = true
-	imgImport.Spec.Repository = &imagev1.RepositoryImportSpec{
-		From: corev1.ObjectReference{
-			Kind: "DockerImage",
-			Name: "registry.redhat.io/redhat/certified-operator-index",
-		},
-		ImportPolicy: imagev1.TagImportPolicy{
-			Scheduled: true,
-		},
-		ReferencePolicy: imagev1.TagReferencePolicy{
-			Type: imagev1.LocalTagReferencePolicy,
-		},
+
+	imageSpecs := make([]imagev1.ImageImportSpec, 0, len(operatorIndices))
+
+	for _, index := range operatorIndices {
+		imageSpec := imagev1.ImageImportSpec{
+			From: corev1.ObjectReference{
+				Kind: "DockerImage",
+				Name: fmt.Sprintf("%s:v%s", "registry.redhat.io/redhat/certified-operator-index", index.OCPVersion),
+			},
+			ImportPolicy: imagev1.TagImportPolicy{
+				Scheduled: true,
+			},
+			ReferencePolicy: imagev1.TagReferencePolicy{
+				Type: imagev1.LocalTagReferencePolicy,
+			},
+		}
+		imageSpecs = append(imageSpecs, imageSpec)
 	}
+
+	imgImport.Spec.Images = imageSpecs
 
 	log.Info("creating new certified image stream import")
 	if err := r.Client.Create(ctx, imgImport); err != nil {
