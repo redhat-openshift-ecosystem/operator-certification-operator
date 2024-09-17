@@ -45,9 +45,9 @@ EOF
   * If a resource fails reconciliation the *Message* section should indicate what needs correction
   
 ### Optionally Check the Operator Logs
-* `oc get pods -n openshift-marketplace`
+* `oc get pods -n openshift-operators`
 * Copy the full pod name of the `certification-operator-controller-manager` pod
-* `oc get logs -f -n openshift-marketplace <pod name> manager`
+* `oc get logs -f -n openshift-operators <pod name> manager`
 * Check to see if the reconciliation occurred 
 
 ## Uninstalling the Operator Pipeline Custom Resource
