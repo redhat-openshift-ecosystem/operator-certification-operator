@@ -194,7 +194,7 @@ OPERATOR_SDK ?= $(LOCALBIN)/operator-sdk
 KUSTOMIZE_VERSION ?= v5.4.3
 CONTROLLER_TOOLS_VERSION ?= v0.16.1
 ENVTEST_VERSION ?= release-0.19
-OPERATOR_SDK_VERSION ?= "v1.36.0"
+OPERATOR_SDK_VERSION ?= "v1.39.0"
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary. If wrong version is installed, it will be removed before downloading.
