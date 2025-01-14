@@ -29,7 +29,7 @@ type OperatorPipelineSpec struct {
 	OperatorPipelinesRelease string `json:"operatorPipelinesRelease,omitempty"`
 
 	// GitHubSecretName is the name of the secret containing the GitHub Token that will be used by the pipeline.
-	//+kubebuilder:validation:Optional
+	// +kubebuilder:validation:Optional
 	GitHubSecretName string `json:"gitHubSecretName,omitempty"`
 
 	// KubeconfigSecretName is the name of the secret containing the kubeconfig that will be used by the pipeline.
@@ -46,17 +46,17 @@ type OperatorPipelineSpec struct {
 
 	// ApplyCIPipeline determines whether to install the ci pipeline.
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="CI Pipeline",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
-	//+kubebuilder:validation:Required
+	// +kubebuilder:validation:Required
 	ApplyCIPipeline bool `json:"applyCIPipeline"`
 
 	// ApplyHostedPipeline determines whether to install the hosted pipeline.
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Hosted Pipeline",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
-	//+kubebuilder:validation:Required
+	// +kubebuilder:validation:Required
 	ApplyHostedPipeline bool `json:"applyHostedPipeline"`
 
 	// ApplyReleasePipeline determines whether to install the release pipeline.
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Release Pipeline",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
-	//+kubebuilder:validation:Required
+	// +kubebuilder:validation:Required
 	ApplyReleasePipeline bool `json:"applyReleasePipeline"`
 }
 
@@ -78,8 +78,8 @@ type OperatorPipelineStatus struct {
 	PipelinesRepoHash string `json:"pipelinesRepoHash,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // OperatorPipeline is the Schema for the operatorpipelines API
 type OperatorPipeline struct {
@@ -90,7 +90,7 @@ type OperatorPipeline struct {
 	Status OperatorPipelineStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // OperatorPipelineList contains a list of OperatorPipeline
 type OperatorPipelineList struct {

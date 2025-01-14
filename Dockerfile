@@ -2,7 +2,7 @@ ARG quay_expiration=never
 ARG release_tag=0.0.0
 
 # Build the manager binary
-FROM docker.io/library/golang:1.22 as builder
+FROM docker.io/library/golang:1.23 as builder
 
 ARG release_tag
 
@@ -25,7 +25,7 @@ COPY .git .git
 # Build
 RUN make build VERSION=${release_tag}
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
 ARG release_tag
 
