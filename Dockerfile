@@ -38,7 +38,7 @@ LABEL \
     io.k8s.description="bundle for the operator-certification-operator" \
     summary="This is the bundle for the operator-certification-operator" \
     maintainer="opdev" \
-    vendor="Red Hat" \
+    vendor="opdev" \
     release="${release_tag}" \
     description="A Kubernetes operator to provision resources for the operator certification"
     
