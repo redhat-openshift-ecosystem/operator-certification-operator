@@ -2,6 +2,7 @@ apiVersion: certification.redhat.com/v1alpha1
 kind: OperatorPipeline
 metadata:
   name: operatorpipeline-sample
+  namespace: oco
 spec:
   operatorPipelinesRelease: main
   kubeconfigSecretName: "kubeconfig"
