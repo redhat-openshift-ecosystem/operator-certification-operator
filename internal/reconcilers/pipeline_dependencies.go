@@ -155,10 +155,10 @@ func (r *PipelineDependenciesReconciler) applyManifests(ctx context.Context, fil
 	}
 
 	obj.SetNamespace(owner.GetNamespace())
-	err = r.Client.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
+	err = r.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
 
 	if len(obj.GetUID()) > 0 {
-		if err := r.Client.Update(ctx, obj); err != nil {
+		if err := r.Update(ctx, obj); err != nil {
 			log.Error(err, fmt.Sprintf("failed to update pipeline resource for file: %s", fileName))
 			return err
 		}
@@ -169,7 +169,7 @@ func (r *PipelineDependenciesReconciler) applyManifests(ctx context.Context, fil
 			return err
 		}
 		_ = controllerutil.SetControllerReference(owner, obj, r.Scheme)
-		if err := r.Client.Create(ctx, obj); err != nil {
+		if err := r.Create(ctx, obj); err != nil {
 			log.Error(err, fmt.Sprintf("failed to create pipeline resource for file: %s", fileName))
 			return err
 		}
@@ -192,13 +192,13 @@ func (r *PipelineDependenciesReconciler) deleteManifests(ctx context.Context, fi
 	}
 
 	obj.SetNamespace(owner.GetNamespace())
-	if err := r.Client.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil && !errors.IsNotFound(err) {
+	if err := r.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
 		return nil
 	}
 
-	if err := r.Client.Delete(ctx, obj); err != nil {
+	if err := r.Delete(ctx, obj); err != nil {
 		log.Error(err, fmt.Sprintf("failed to delete pipeline resource for file: %s", fileName))
 		return err
 	}

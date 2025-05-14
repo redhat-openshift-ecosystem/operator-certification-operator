@@ -194,7 +194,7 @@ func (r *StatusReconciler) reconcileImageStreamStatus(ctx context.Context, pipel
 	log := r.Log.WithValues("status.observedGeneration", pipeline.Generation)
 
 	imageStream := &imagev1.ImageStream{}
-	err := r.Client.Get(ctx, types.NamespacedName{Namespace: pipeline.Namespace, Name: indexName}, imageStream)
+	err := r.Get(ctx, types.NamespacedName{Namespace: pipeline.Namespace, Name: indexName}, imageStream)
 	if err != nil && !apierrors.IsNotFound(err) {
 		log.WithValues("imagestream", types.NamespacedName{Namespace: pipeline.Namespace, Name: indexName}).
 			Error(err, "failed to get object")
@@ -227,7 +227,7 @@ func (r *StatusReconciler) reconcileSecretStatus(ctx context.Context, pipeline *
 	}
 	log := r.Log.WithValues("status.observedGeneration", pipeline.Generation)
 	secret := &corev1.Secret{}
-	err := r.Client.Get(ctx, types.NamespacedName{Namespace: pipeline.Namespace, Name: secretName}, secret)
+	err := r.Get(ctx, types.NamespacedName{Namespace: pipeline.Namespace, Name: secretName}, secret)
 	if err != nil && !apierrors.IsNotFound(err) {
 		log.WithValues(strings.ToLower(secretType), types.NamespacedName{Namespace: pipeline.Namespace, Name: secretName}).
 			Error(err, "failed to get object")
@@ -367,8 +367,8 @@ func (r *StatusReconciler) reconcilePipelineStatus(ctx context.Context, pipeline
 		return true, err
 	}
 
-	obj.SetNamespace(pipeline.ObjectMeta.Namespace)
-	err = r.Client.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
+	obj.SetNamespace(pipeline.Namespace)
+	err = r.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
 	if err != nil {
 		meta.SetStatusCondition(&pipeline.Status.Conditions, r.setStatusInfo(
 			r.conditionStatus(false),
@@ -434,8 +434,8 @@ func (r *StatusReconciler) reconcileTasksStatus(ctx context.Context, pipeline *v
 			unmarshalErrors = append(unmarshalErrors, entry.Name())
 			continue
 		}
-		obj.SetNamespace(pipeline.ObjectMeta.Namespace)
-		err = r.Client.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
+		obj.SetNamespace(pipeline.Namespace)
+		err = r.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
 		if err != nil && apierrors.IsNotFound(err) {
 			getErrors = append(getErrors, obj.GetName())
 			continue
