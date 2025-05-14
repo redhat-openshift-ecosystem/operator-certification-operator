@@ -63,7 +63,7 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	reqLogger.Info("Reconciling OperatorPipeline")
 
 	currentPipeline := &v1alpha1.OperatorPipeline{}
-	err := r.Client.Get(ctx, req.NamespacedName, currentPipeline)
+	err := r.Get(ctx, req.NamespacedName, currentPipeline)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request. Return and don't
@@ -83,7 +83,7 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			// creating listOptions inorder to know the number of OperatorPipeline resources in the given namespace
 			// if last CR in namespace we can remove the ClusterRoleBinding associated with the namespace
 			listOptions := client.InNamespace(currentPipeline.Namespace)
-			if err := r.Client.List(ctx, namespacePipelines, listOptions); err != nil {
+			if err := r.List(ctx, namespacePipelines, listOptions); err != nil {
 				return ctrl.Result{}, err
 			}
 
@@ -98,7 +98,7 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			clusterPipelines := &v1alpha1.OperatorPipelineList{}
 			// not creating listOptions since we want to know the total number of OperatorPipelines in the entire cluster
 			// if last CR in cluster we can remove the SCC and ClusterRole
-			if err := r.Client.List(ctx, clusterPipelines); err != nil {
+			if err := r.List(ctx, clusterPipelines); err != nil {
 				return ctrl.Result{}, err
 			}
 
@@ -161,23 +161,23 @@ func (r *OperatorPipelineReconciler) deleteSCCandClusterRole(ctx context.Context
 	}
 
 	crList := &rbacv1.ClusterRoleList{}
-	if err := r.Client.List(ctx, crList, listOption); err != nil {
+	if err := r.List(ctx, crList, listOption); err != nil {
 		return err
 	}
 
 	for _, cr := range crList.Items {
-		if err := r.Client.Delete(ctx, &cr); err != nil {
+		if err := r.Delete(ctx, &cr); err != nil {
 			return err
 		}
 	}
 
 	sccList := &securityv1.SecurityContextConstraintsList{}
-	if err := r.Client.List(ctx, sccList, listOption); err != nil {
+	if err := r.List(ctx, sccList, listOption); err != nil {
 		return err
 	}
 
 	for _, scc := range sccList.Items {
-		if err := r.Client.Delete(ctx, &scc); err != nil {
+		if err := r.Delete(ctx, &scc); err != nil {
 			return err
 		}
 	}
@@ -194,12 +194,12 @@ func (r *OperatorPipelineReconciler) deleteClusterRoleBinding(ctx context.Contex
 	}
 
 	crbList := &rbacv1.ClusterRoleBindingList{}
-	if err := r.Client.List(ctx, crbList, listOption); err != nil {
+	if err := r.List(ctx, crbList, listOption); err != nil {
 		return err
 	}
 
 	for _, crb := range crbList.Items {
-		if err := r.Client.Delete(ctx, &crb); err != nil {
+		if err := r.Delete(ctx, &crb); err != nil {
 			return err
 		}
 	}

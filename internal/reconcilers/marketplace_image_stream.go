@@ -96,7 +96,7 @@ func (r *MarketplaceImageStreamReconciler) Reconcile(ctx context.Context, pipeli
 	imgImport.Spec.Images = imageSpecs
 
 	log.Info("creating new marketplace image stream import")
-	if err := r.Client.Create(ctx, imgImport); err != nil {
+	if err := r.Create(ctx, imgImport); err != nil {
 		return true, err
 	}
 
