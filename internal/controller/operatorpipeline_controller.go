@@ -218,5 +218,6 @@ func (r *OperatorPipelineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&securityv1.SecurityContextConstraints{}).
 		Owns(&rbacv1.ClusterRole{}).
 		Owns(&rbacv1.ClusterRoleBinding{}).
+		Named("operator_pipeline").
 		Complete(r)
 }
