@@ -3,6 +3,7 @@ kind: Namespace
 metadata:
   labels:
     control-plane: controller-manager
+    app.kubernetes.io/name: operator-certification-operator
   name: system
 ---
 apiVersion: apps/v1
@@ -12,10 +13,12 @@ metadata:
   namespace: system
   labels:
     control-plane: controller-manager
+    app.kubernetes.io/name: operator-certification-operator
 spec:
   selector:
     matchLabels:
       control-plane: controller-manager
+      app.kubernetes.io/name: operator-certification-operator
   replicas: 1
   template:
     metadata:
@@ -23,6 +26,7 @@ spec:
         kubectl.kubernetes.io/default-container: manager
       labels:
         control-plane: controller-manager
+        app.kubernetes.io/name: operator-certification-operator
     spec:
       securityContext:
         runAsNonRoot: true
