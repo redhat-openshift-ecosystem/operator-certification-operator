@@ -7,21 +7,26 @@ on:
 jobs:
   build-main:
     name: Build and push a main snapshot image
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
       id: go
-    - name: Fetch latest release version
-      uses: reloc8/action-latest-release-version@1.0.0
-      id: fetch-latest-release
-    - name: Set Env Tags
-      run: echo RELEASE_TAG=${{ steps.fetch-latest-release.outputs.latest-release }}-alpha >> $GITHUB_ENV
-    - name: Set a default if release tag is empty
-      if: ${{ steps.fetch-latest-release.outputs.latest-release }} == ""
-      run: echo RELEASE_TAG=0.0.0 >> $GITHUB_ENV
+
+    - name: Set release version
+      run: |
+        RELEASE_TAG=$(gh --repo "${GITHUB_REPOSITORY}" release list \
+                         --json name,isLatest \
+                         --jq '.[] | select(.isLatest) | .name')
+        if [ -z "${RELEASE_TAG}" ]; then
+          RELEASE_TAG="0.0.0"
+        fi
+        echo "RELEASE_TAG=${RELEASE_TAG}" | tee -a "${GITHUB_ENV}"
+      env:
+        GH_TOKEN: ${{ github.token }}
+
     - name: Set image registry env
       run: |
         echo IMAGE_REGISTRY=$(echo ${{ secrets.IMAGE_REGISTRY }} | cut -d '/' -f 1) >> $GITHUB_ENV
