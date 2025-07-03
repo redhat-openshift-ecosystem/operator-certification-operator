@@ -11,10 +11,10 @@ on:
 jobs:
   build-release:
     name: Build and push a tag image
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
       id: go
