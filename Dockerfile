@@ -25,7 +25,7 @@ COPY .git .git
 # Build
 RUN make build VERSION=${release_tag}
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+FROM registry.access.redhat.com/ubi10/ubi-minimal:latest
 
 ARG release_tag
 
