@@ -109,6 +109,12 @@ func cloneOrPullRepo(targetPath string, pipelineRelease string) (string, error) 
 		return "", err
 	}
 
+	// Reset the worktree to discard any local changes
+	// This avoids reconciliation errors when anything other than `main` is used in the CR
+	if err := w.Reset(&git.ResetOptions{Mode: git.HardReset}); err != nil {
+		return "", err
+	}
+
 	// Checking out the hash value of the branch/tag that was requested
 	if err := w.Checkout(&git.CheckoutOptions{Hash: ref.Hash()}); err != nil {
 		return "", err
