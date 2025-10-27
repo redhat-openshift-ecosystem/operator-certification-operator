@@ -1,6 +1,6 @@
 module github.com/redhat-openshift-ecosystem/operator-certification-operator
 
-go 1.24.4
+go 1.25.3
 
 require (
 	github.com/go-git/go-git/v5 v5.16.2
