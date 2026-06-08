@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // Important: Run "make" to regenerate code after modifying this file
@@ -100,5 +101,9 @@ type OperatorPipelineList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&OperatorPipeline{}, &OperatorPipelineList{})
+	SchemeBuilder.Register(func(s *runtime.Scheme) error {
+		s.AddKnownTypes(GroupVersion, &OperatorPipeline{}, &OperatorPipelineList{})
+		metav1.AddToGroupVersion(s, GroupVersion)
+		return nil
+	})
 }
