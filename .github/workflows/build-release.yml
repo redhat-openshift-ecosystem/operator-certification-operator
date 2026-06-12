@@ -8,6 +8,9 @@ on:
     branches:
       - ghactions
 
+permissions:
+  contents: read
+
 jobs:
   build-release:
     name: Build and push a tag image
@@ -24,9 +27,13 @@ jobs:
       id: go
     - name: Set Env Tags
       run: |
-        echo RELEASE_TAG=$(echo $GITHUB_REF | cut -d '/' -f 3) >> $GITHUB_ENV
-        echo IMAGE_REGISTRY=$(echo ${{ secrets.IMAGE_REGISTRY }} | cut -d '/' -f 1) >> $GITHUB_ENV
-        echo IMAGE_REPO=$(echo ${{ secrets.IMAGE_REGISTRY }} | cut -d '/' -f 2) >> $GITHUB_ENV
+        {
+          echo "RELEASE_TAG=$(echo "${GITHUB_REF}" | cut -d '/' -f 3)"
+          echo "IMAGE_REGISTRY=$(echo "${_IMAGE_REGISTRY}" | cut -d '/' -f 1)"
+          echo "IMAGE_REPO=$(echo "${_IMAGE_REGISTRY}" | cut -d '/' -f 2)"
+        } >> "${GITHUB_ENV}"
+      env:
+        _IMAGE_REGISTRY: ${{ secrets.IMAGE_REGISTRY }}
 
     - name: Build Operator Image
       id: build-operator-image
@@ -52,11 +59,8 @@ jobs:
     - name: Build Bundle
       id: build-bundle
       run: |
-        IMAGE_REGISTRY=${{ env.IMAGE_REGISTRY }} \
-        IMAGE_REPO=${{ env.IMAGE_REPO }} \
-        RELEASE_TAG=${{ env.RELEASE_TAG }} \
-        VERSION=${{ env.RELEASE_TAG }} \
-        USE_IMAGE_DIGESTS=true \
+        VERSION="${RELEASE_TAG}" \
+        USE_IMAGE_DIGESTS="true" \
         make bundle
 
     # This is a very naive implementation. Mainly for PoC
@@ -85,5 +89,9 @@ jobs:
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
-    - run: echo "Operator Image pushed to ${{ steps.push-operator-image.outputs.registry-paths }}"
-    - run: echo "Bundle Image pushed to ${{ steps.push-bundle-image.outputs.registry-paths }}"
+    - run: |
+        echo "Operator Image pushed to ${OPERATOR_IMAGE_REGISTRY_PATHS}"
+        echo "Bundle Image pushed to ${BUNDLE_IMAGE_REGISTRY_PATHS}"
+      env:
+        OPERATOR_IMAGE_REGISTRY_PATHS: ${{ steps.push-operator-image.outputs.registry-paths }}
+        BUNDLE_IMAGE_REGISTRY_PATHS: ${{ steps.push-bundle-image.outputs.registry-paths }}
