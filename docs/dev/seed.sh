@@ -2,7 +2,7 @@ echo switching to openshift-operators namespace
 oc project openshift-operators
 
 echo exporting kubeconfig
-export KUBECONFIG=~/.kube/config
+export KUBECONFIG=${KUBECONFIG:-~/.kube/config}
 
 echo creating kube secret in cluster
 oc create secret generic kubeconfig --from-file=kubeconfig=$KUBECONFIG
