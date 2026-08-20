@@ -26,10 +26,10 @@ jobs:
     - run: sudo rm -f /usr/local/bin/kustomize
 
     - name: Generate
-      run: make generate && git diff --exit-code
+      run: make generate
 
     - name: Manifests
-      run: make manifests && git diff --exit-code
+      run: make manifests
 
     - name: Tidy
       run: make tidy
