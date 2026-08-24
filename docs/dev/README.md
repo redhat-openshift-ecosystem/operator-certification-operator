@@ -7,12 +7,12 @@ functional, and in your path.
 
 | Tool             | CLI            | Minimum Version |
 |------------------|:--------------:|----------------:|
-| Go               | `go`           |         v1.26.3 |
+| Go               | `go`           |         v1.26.7 |
 | Make             | `make`         |               - |
 | OperatorSDK      | `operator-sdk` |         v1.40.0 |
 | OpenShift Client | `oc`           |         v4.7.13 |
-| Tekton CLI       | `tkn`          |          v0.19.1|
-| Git              | `git`          |          v2.32.0|
+| Tekton CLI       | `tkn`          |         v0.19.1 |
+| Git              | `git`          |         v2.32.0 |
 
 **Note:** For Tekton CLI, the version should be based on the [Compatibility and support matrix](https://docs.redhat.com/en/documentation/red_hat_openshift_pipelines/1.23/html/release_notes/index) for the Red Hat OpenShift Pipelines Operator.
 This ensures that the version of Tekton CLI used locally, is supported by the installed Pipelines operator within your OpenShift cluster.
