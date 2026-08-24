@@ -4,6 +4,13 @@ metadata:
   annotations:
     alm-examples: '[]'
     capabilities: Basic Install
+    features.operators.openshift.io/disconnected: "false"
+    features.operators.openshift.io/fips-compliant: "false"
+    features.operators.openshift.io/proxy-aware: "false"
+    features.operators.openshift.io/tls-profiles: "false"
+    features.operators.openshift.io/token-auth-aws: "false"
+    features.operators.openshift.io/token-auth-azure: "false"
+    features.operators.openshift.io/token-auth-gcp: "false"
     operatorframework.io/suggested-namespace: openshift-operators
     operators.operatorframework.io.bundle.channel.default.v1: alpha
     operators.operatorframework.io.bundle.channels: alpha
