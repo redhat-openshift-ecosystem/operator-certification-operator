@@ -32,16 +32,4 @@ oc create secret docker-registry registry-dockerconfig-secret \
     --docker-email=test@test.net
 
 echo creating OperatorPipeline
-oc apply -f - <<'EOF'
-apiVersion: certification.redhat.com/v1alpha1
-kind: OperatorPipeline
-metadata:
-  name: operatorpipeline-sample
-spec:
-  operatorPipelinesRelease: main
-  kubeconfigSecretName: "kubeconfig"
-  gitHubSecretName: "github-api-token"
-  pyxisSecretName: "pyxis-api-secret"
-  dockerRegistrySecretName: "registry-dockerconfig-secret"
-  githubSSHSecretName: "github-ssh-credentials"
-EOF
+oc apply -f config/samples/certification_v1alpha1_operatorpipeline.yaml
