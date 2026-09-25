@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+env:
+  PREFLIGHT_VERSION: "latest"
+
 jobs:
   build-release:
     name: Build and push a tag image
@@ -56,6 +59,57 @@ jobs:
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
     
+    - name: Install Preflight CLI
+      uses: redhat-actions/openshift-tools-installer@e3b32c2ab7b064b2ce189121c4a49f509a99a7b4 # v3.0
+      with:
+        source: github
+        preflight: "${{ env.PREFLIGHT_VERSION }}"
+
+    - name: Run Preflight container certification check
+      id: preflight-check
+      run: |
+        PREFLIGHT_ARGS=()
+        if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
+          PREFLIGHT_ARGS+=(
+            "--submit"
+            "--pyxis-api-token=${PFLT_PYXIS_API_TOKEN}"
+            "--certification-component-id=${PFLT_CERTIFICATION_COMPONENT_ID}"
+          )
+        fi
+
+        echo "::group::Preflight check container results"
+        if ! preflight check container \
+          "${OPERATOR_IMAGE}" \
+          "${PREFLIGHT_ARGS[@]}" \
+          --loglevel=debug; then
+          echo "::endgroup::"
+          echo "::error::Preflight check container failed. See results above."
+          echo "--- Preflight Log ---"
+          cat preflight.log
+          exit 1
+        fi
+        echo "::endgroup::"
+
+        RESULTS_FILE="artifacts/results.json"
+        if [ -f "${RESULTS_FILE}" ]; then
+          PASSED=$(jq -r '.passed' "${RESULTS_FILE}")
+          if [ "${PASSED}" != "true" ]; then
+            echo "::error::Preflight check container reported PassedOverall=false despite exiting successfully."
+            echo "--- Results ---"
+            jq '.' "${RESULTS_FILE}"
+            echo "--- Preflight Log ---"
+            cat preflight.log
+            exit 1
+          fi
+        else
+          echo "::error::Preflight results file not found at ${RESULTS_FILE}."
+          exit 1
+        fi
+      env:
+        OPERATOR_IMAGE: ${{ steps.push-operator-image.outputs.registry-path }}
+        PFLT_PYXIS_API_TOKEN: ${{ secrets.PFLT_PYXIS_API_TOKEN }}
+        PFLT_CERTIFICATION_COMPONENT_ID: ${{ secrets.PFLT_CERTIFICATION_COMPONENT_ID }}
+
     - name: Build Bundle
       id: build-bundle
       run: |
