@@ -15,6 +15,8 @@ jobs:
   build-release:
     name: Build and push a tag image
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -34,6 +36,10 @@ jobs:
         } >> "${GITHUB_ENV}"
       env:
         _IMAGE_REGISTRY: ${{ secrets.IMAGE_REGISTRY }}
+
+    - name: Export version for downstream
+      id: version
+      run: echo "version=${RELEASE_TAG}" >> "${GITHUB_OUTPUT}"
 
     - name: Build Operator Image
       id: build-operator-image
@@ -70,6 +76,13 @@ jobs:
         echo '  com.redhat.openshift.versions: "v4.8"' >> bundle/annotations.yaml
         echo 'LABEL com.redhat.openshift.versions="v4.8"' >> bundle.Dockerfile
 
+    - name: Upload bundle artifacts
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: operator-bundle
+        path: bundle/
+        retention-days: 1
+
     - name: Build Bundle Image
       id: build-bundle-image
       uses: redhat-actions/buildah-build@719e3c40d8af9790c23eca13f7daa339f2867034 # v3.1.0
@@ -95,3 +108,87 @@ jobs:
       env:
         OPERATOR_IMAGE_REGISTRY_PATHS: ${{ steps.push-operator-image.outputs.registry-paths }}
         BUNDLE_IMAGE_REGISTRY_PATHS: ${{ steps.push-bundle-image.outputs.registry-paths }}
+
+  submit-to-certified-operators:
+    name: Submit bundle to certified-operators
+    needs: build-release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.build-release.outputs.version }}
+      OPERATOR_NAME: operator-certification-operator
+      FORK_OWNER: itroyano
+      FORK_REPO: itroyano/certified-operators
+      UPSTREAM_REPO: redhat-openshift-ecosystem/certified-operators
+    steps:
+      - name: Download bundle artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: operator-bundle
+          path: bundle/
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.CERTIFIED_OPS_BOT_APP_ID }}
+          private-key: ${{ secrets.CERTIFIED_OPS_BOT_PRIVATE_KEY }}
+          owner: itroyano
+          repositories: certified-operators
+
+      - name: Clone certified-operators fork
+        run: |
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${FORK_REPO}.git" certified-operators
+          cd certified-operators
+          git remote add upstream "https://github.com/${UPSTREAM_REPO}.git"
+          git fetch upstream main
+          git checkout -b "oco-${VERSION}" upstream/main
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Copy bundle to certified-operators
+        run: |
+          TARGET_DIR="certified-operators/operators/${OPERATOR_NAME}/${VERSION}"
+          mkdir -p "${TARGET_DIR}/manifests"
+          mkdir -p "${TARGET_DIR}/metadata"
+          mkdir -p "${TARGET_DIR}/tests/scorecard"
+
+          cp bundle/manifests/*.yaml "${TARGET_DIR}/manifests/"
+          cp bundle/metadata/*.yaml "${TARGET_DIR}/metadata/"
+          if [ -d "bundle/tests/scorecard" ]; then
+            cp bundle/tests/scorecard/*.yaml "${TARGET_DIR}/tests/scorecard/"
+          fi
+
+      - name: Push branch to fork
+        run: |
+          cd certified-operators
+          git config user.name "oco-release-bot[bot]"
+          git config user.email "oco-release-bot[bot]@users.noreply.github.com"
+          git add "operators/${OPERATOR_NAME}/${VERSION}/"
+          git commit -m "operator ${OPERATOR_NAME} (${VERSION})"
+          git push origin "oco-${VERSION}"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Create pull request
+        run: |
+          gh pr create \
+            --repo "${UPSTREAM_REPO}" \
+            --head "${FORK_OWNER}:oco-${VERSION}" \
+            --base main \
+            --title "operator ${OPERATOR_NAME} (${VERSION})" \
+            --body "$(cat <<PRBODY
+          ## Automated bundle submission
+
+          Operator: ${OPERATOR_NAME}
+          Version: ${VERSION}
+
+          Submitted automatically by the operator-certification-operator release workflow.
+
+          Source: https://github.com/redhat-openshift-ecosystem/operator-certification-operator/releases/tag/${VERSION}
+          PRBODY
+          )"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
