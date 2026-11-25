@@ -7,7 +7,7 @@ functional, and in your path.
 
 | Tool             | CLI            | Minimum Version |
 |------------------|:--------------:|----------------:|
-| Go               | `go`           |         v1.26.7 |
+| Go               | `go`           |         v1.27.4 |
 | Make             | `make`         |               - |
 | OperatorSDK      | `operator-sdk` |         v1.40.0 |
 | OpenShift Client | `oc`           |         v4.7.13 |
