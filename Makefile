@@ -313,7 +313,7 @@ tidy:
 	git diff --exit-code
 
 GOLANGCI_LINT = $(shell pwd)/bin/golangci-lint
-GOLANGCI_LINT_VERSION ?= v2.12.2
+GOLANGCI_LINT_VERSION ?= v2.15.0
 golangci-lint: $(GOLANGCI_LINT)
 $(GOLANGCI_LINT):
 	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION))

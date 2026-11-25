@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	"github.com/redhat-openshift-ecosystem/operator-certification-operator/api/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/operator-certification-operator/internal/reconcilers"
@@ -36,7 +37,10 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-const operatorPipelineFinalizer = "certification.redhat.com/finalizer"
+const (
+	operatorPipelineFinalizer = "certification.redhat.com/finalizer"
+	requeueDelay              = time.Second
+)
 
 var log = logf.Log.WithName("controller_operatorpipeline")
 
@@ -150,7 +154,10 @@ func (r *OperatorPipelineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Just return the first error reported. It's the most likely issue that needs to be solved.
-	return ctrl.Result{Requeue: requeueResult}, errResult
+	if requeueResult {
+		return ctrl.Result{RequeueAfter: requeueDelay}, errResult
+	}
+	return ctrl.Result{}, errResult
 }
 
 func (r *OperatorPipelineReconciler) deleteSCCandClusterRole(ctx context.Context, log logr.Logger) error {
